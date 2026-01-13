@@ -74,16 +74,10 @@ Always try to detect the ticket number in this priority order:
   - Is concise (1-2 sentences) focusing on "why" not just "what"
   - Follows the repository's existing commit style
 - Stage relevant files with `git add`
-- Create commit with message ending in:
-  ```
-  Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>
-  ```
 - Use heredoc format for commit message:
   ```bash
   git commit -m "$(cat <<'EOF'
   Your commit message here.
-
-  Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>
   EOF
   )"
   ```
@@ -134,14 +128,6 @@ Brief explanation (2-3 sentences max) of what this PR does and why.
 1. Step-by-step instructions
 2. Expected behavior
 3. Edge cases to check
-
-**What I tested:**
-- [ ] Thing 1
-- [ ] Thing 2
-- [ ] Thing 3
-
----
-*Built with [Claude Code](https://claude.com/claude-code)*
 EOF
 )"
 ```
