@@ -10,7 +10,7 @@ Personal Claude Code configuration, commands, and MCP settings.
 │   ├── commit-push-pr.md
 │   └── post-sdk-pr-to-slack.md
 ├── mcp/                # MCP server configurations (future)
-└── skills/             # Codex skills (future)
+└── skills/             # Claude skills (future)
 ```
 
 ## Installation
