@@ -67,20 +67,32 @@ Always try to detect the ticket number in this priority order:
 - Run `git diff` to see staged and unstaged changes
 - Run `git log -5 --oneline` to understand commit history style
 
-### 4. Create Commit
+### 4. Create Commit(s)
 
-- Analyze all changes and create a meaningful commit message that:
-  - Summarizes the nature of changes (feature, fix, refactor, docs, etc.)
-  - Is concise (1-2 sentences) focusing on "why" not just "what"
-  - Follows the repository's existing commit style
-- Stage relevant files with `git add`
-- Use heredoc format for commit message:
-  ```bash
-  git commit -m "$(cat <<'EOF'
-  Your commit message here.
-  EOF
-  )"
-  ```
+- Analyze all changes and determine if they should be **one commit or multiple commits**:
+  - **Single commit**: If all changes are related to one logical unit of work
+  - **Multiple commits**: If changes can be broken into distinct, independent pieces (e.g., refactor + feature, or multiple unrelated fixes)
+  
+- For each commit:
+  - Group related files together
+  - Create a meaningful commit message that:
+    - Summarizes the nature of changes (feature, fix, refactor, docs, etc.)
+    - Is concise (1-2 sentences) focusing on "why" not just "what"
+    - Follows the repository's existing commit style
+  - Stage relevant files with `git add`
+  - Use heredoc format for commit message:
+    ```bash
+    git commit -m "$(cat <<'EOF'
+    Your commit message here.
+    EOF
+    )"
+    ```
+
+- **Granular commit examples**:
+  - Separate "cleanup/refactor" from "new feature"
+  - Separate "fix bug A" from "fix bug B" if unrelated
+  - Separate "update dependencies" from "code changes"
+  - Keep test changes with the code they test (same commit)
 
 ### 5. Push to Remote
 
