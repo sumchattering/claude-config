@@ -27,7 +27,7 @@ This will:
 - Symlink commands to `~/.claude/commands`
 - Symlink Slack credentials to `~/.slack-mcp-tokens.json`
 - Symlink Jira credentials to `~/.jira-mcp-credentials.json`
-- Install Slack and Jira MCP servers via `claude mcp add`
+- Install Slack and Jira MCP servers system-wide via `claude mcp add --scope user`
 
 ### Manual Installation
 
@@ -41,9 +41,9 @@ ln -sf ~/.claude-config/commands ~/.claude/commands
 ln -sf ~/.claude-config/slack-credentials.json ~/.slack-mcp-tokens.json
 ln -sf ~/.claude-config/jira-credentials.json ~/.jira-mcp-credentials.json
 
-# Add MCP servers
-claude mcp add slack slack-mcp-server -e SLACK_TOKEN_FILE=~/.slack-mcp-tokens.json
-claude mcp add jira -e JIRA_URL="..." -e JIRA_USERNAME="..." -e JIRA_API_TOKEN="..." -- npx -y mcp-jira-stdio
+# Add MCP servers (system-wide)
+claude mcp add --scope user slack slack-mcp-server -e SLACK_TOKEN_FILE=~/.slack-mcp-tokens.json
+claude mcp add --scope user jira -e JIRA_BASE_URL="..." -e JIRA_EMAIL="..." -e JIRA_API_TOKEN="..." -- npx -y mcp-jira-stdio
 ```
 
 ## Commands
@@ -77,10 +77,18 @@ Edit `~/.claude-config/jira-credentials.json` with your Jira details:
 
 ```json
 {
-  "JIRA_URL": "https://your-domain.atlassian.net",
-  "JIRA_USERNAME": "your-email@example.com",
+  "JIRA_BASE_URL": "https://your-domain.atlassian.net",
+  "JIRA_EMAIL": "your-email@example.com",
   "JIRA_API_TOKEN": "your-api-token-here"
 }
 ```
 
-Then re-run the bootstrap script to apply the credentials.
+Then re-run the bootstrap script to apply the credentials:
+
+```bash
+# First, remove the existing Jira MCP server
+claude mcp remove jira
+
+# Then re-run bootstrap to add it with credentials
+~/.claude-config/bootstrap.sh
+```

@@ -76,12 +76,18 @@ if claude mcp list 2>/dev/null | grep -q "jira:"; then
 else
     if [ -f "$HOME/.jira-mcp-credentials.json" ]; then
         # Read credentials from JSON file
-        JIRA_URL=$(grep -o '"JIRA_URL"[[:space:]]*:[[:space:]]*"[^"]*"' "$HOME/.jira-mcp-credentials.json" | sed 's/.*: "\(.*\)"/\1/')
-        JIRA_USERNAME=$(grep -o '"JIRA_USERNAME"[[:space:]]*:[[:space:]]*"[^"]*"' "$HOME/.jira-mcp-credentials.json" | sed 's/.*: "\(.*\)"/\1/')
+        JIRA_BASE_URL=$(grep -o '"JIRA_BASE_URL"[[:space:]]*:[[:space:]]*"[^"]*"' "$HOME/.jira-mcp-credentials.json" | sed 's/.*: "\(.*\)"/\1/')
+        JIRA_EMAIL=$(grep -o '"JIRA_EMAIL"[[:space:]]*:[[:space:]]*"[^"]*"' "$HOME/.jira-mcp-credentials.json" | sed 's/.*: "\(.*\)"/\1/')
         JIRA_API_TOKEN=$(grep -o '"JIRA_API_TOKEN"[[:space:]]*:[[:space:]]*"[^"]*"' "$HOME/.jira-mcp-credentials.json" | sed 's/.*: "\(.*\)"/\1/')
         
-        claude mcp add --scope user jira -e JIRA_URL="$JIRA_URL" -e JIRA_USERNAME="$JIRA_USERNAME" -e JIRA_API_TOKEN="$JIRA_API_TOKEN" -- npx -y mcp-jira-stdio
-        echo "✓ Added Jira MCP server with credentials"
+        # Only add with credentials if they are not placeholder values
+        if [[ "$JIRA_BASE_URL" != "https://your-domain.atlassian.net" && "$JIRA_EMAIL" != "your-email@example.com" ]]; then
+            claude mcp add --scope user jira -e JIRA_BASE_URL="$JIRA_BASE_URL" -e JIRA_EMAIL="$JIRA_EMAIL" -e JIRA_API_TOKEN="$JIRA_API_TOKEN" -- npx -y mcp-jira-stdio
+            echo "✓ Added Jira MCP server with credentials"
+        else
+            claude mcp add --scope user jira -- npx -y mcp-jira-stdio
+            echo "⚠️  Added Jira MCP server without credentials (update jira-credentials.json and re-run)"
+        fi
     else
         claude mcp add --scope user jira -- npx -y mcp-jira-stdio
         echo "✓ Added Jira MCP server (no credentials configured)"
