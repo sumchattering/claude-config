@@ -6,29 +6,42 @@ Personal Claude Code configuration, commands, and MCP settings.
 
 ```
 .claude-config/
-├── commands/              # Slash commands for Claude Code
+├── commands/                    # Slash commands for Claude Code
 │   ├── commit-push-pr.md
 │   └── post-sdk-pr-to-slack.md
-├── mcp.json               # MCP server configurations
-├── slack-credentials.json # Slack MCP credentials (gitignored)
-└── jira-credentials.json  # Jira MCP credentials (gitignored)
+├── bootstrap.sh                 # Setup script for symlinks and MCP servers
+├── slack-credentials.json       # Slack MCP credentials (gitignored)
+└── README.md
 ```
 
 ## Installation
 
-### Commands
-Symlink commands to Claude's home directory:
+Run the bootstrap script to set up everything:
 
 ```bash
-ln -sf ~/.claude-config/commands ~/.claude/commands
+~/.claude-config/bootstrap.sh
 ```
 
-### MCP Servers
-The `mcp.json` file configures MCP servers for:
-- **Slack**: Integration with Slack workspace
-- **Jira**: Integration with Jira/Atlassian
+This will:
+- Symlink commands to `~/.claude/commands`
+- Symlink Slack credentials to `~/.slack-mcp-tokens.json`
+- Install Slack and Jira MCP servers via `claude mcp add`
 
-Credentials are stored separately in gitignored files.
+### Manual Installation
+
+If you prefer to set up manually:
+
+```bash
+# Symlink commands
+ln -sf ~/.claude-config/commands ~/.claude/commands
+
+# Symlink Slack credentials
+ln -sf ~/.claude-config/slack-credentials.json ~/.slack-mcp-tokens.json
+
+# Add MCP servers
+claude mcp add slack slack-mcp-server -e SLACK_TOKEN_FILE=~/.slack-mcp-tokens.json
+claude mcp add jira -- npx -y mcp-jira-stdio
+```
 
 ## Commands
 
@@ -38,17 +51,14 @@ Automates git workflow: commit, push, and create PR with smart ticket detection.
 ### `/post-sdk-pr-to-slack`
 Posts PR links to the `eng-sdk-team` Slack channel with proper formatting and tags.
 
-## MCP Setup
+## MCP Servers
 
 ### Slack MCP
-Credentials are stored in `slack-credentials.json` (gitignored).
+- **Package**: `@teamsparta/mcp-server-slack`
+- **Install**: `npm install -g @teamsparta/mcp-server-slack`
+- **Credentials**: Stored in `slack-credentials.json` (gitignored)
 
 ### Jira MCP
-Credentials should be stored in `jira-credentials.json` (gitignored) with:
-```json
-{
-  "JIRA_URL": "https://your-domain.atlassian.net",
-  "JIRA_USERNAME": "your-email@example.com",
-  "JIRA_API_TOKEN": "your-api-token"
-}
-```
+- **Package**: `mcp-jira-stdio`
+- **Install**: Automatically installed via `npx` when added
+- **Credentials**: Configure via environment variables when needed
