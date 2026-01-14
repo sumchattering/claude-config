@@ -11,6 +11,7 @@ Personal Claude Code configuration, commands, and MCP settings.
 │   └── post-sdk-pr-to-slack.md
 ├── bootstrap.sh                 # Setup script for symlinks and MCP servers
 ├── slack-credentials.json       # Slack MCP credentials (gitignored)
+├── jira-credentials.json        # Jira MCP credentials (gitignored)
 └── README.md
 ```
 
@@ -25,6 +26,7 @@ Run the bootstrap script to set up everything:
 This will:
 - Symlink commands to `~/.claude/commands`
 - Symlink Slack credentials to `~/.slack-mcp-tokens.json`
+- Symlink Jira credentials to `~/.jira-mcp-credentials.json`
 - Install Slack and Jira MCP servers via `claude mcp add`
 
 ### Manual Installation
@@ -35,12 +37,13 @@ If you prefer to set up manually:
 # Symlink commands
 ln -sf ~/.claude-config/commands ~/.claude/commands
 
-# Symlink Slack credentials
+# Symlink credentials
 ln -sf ~/.claude-config/slack-credentials.json ~/.slack-mcp-tokens.json
+ln -sf ~/.claude-config/jira-credentials.json ~/.jira-mcp-credentials.json
 
 # Add MCP servers
 claude mcp add slack slack-mcp-server -e SLACK_TOKEN_FILE=~/.slack-mcp-tokens.json
-claude mcp add jira -- npx -y mcp-jira-stdio
+claude mcp add jira -e JIRA_URL="..." -e JIRA_USERNAME="..." -e JIRA_API_TOKEN="..." -- npx -y mcp-jira-stdio
 ```
 
 ## Commands
@@ -61,4 +64,23 @@ Posts PR links to the `eng-sdk-team` Slack channel with proper formatting and ta
 ### Jira MCP
 - **Package**: `mcp-jira-stdio`
 - **Install**: Automatically installed via `npx` when added
-- **Credentials**: Configure via environment variables when needed
+- **Credentials**: Stored in `jira-credentials.json` (gitignored)
+  - Get your API token from: https://id.atlassian.com/manage-profile/security/api-tokens
+
+## Setup Credentials
+
+### Slack
+The `slack-credentials.json` should already be configured with your tokens.
+
+### Jira
+Edit `~/.claude-config/jira-credentials.json` with your Jira details:
+
+```json
+{
+  "JIRA_URL": "https://your-domain.atlassian.net",
+  "JIRA_USERNAME": "your-email@example.com",
+  "JIRA_API_TOKEN": "your-api-token-here"
+}
+```
+
+Then re-run the bootstrap script to apply the credentials.

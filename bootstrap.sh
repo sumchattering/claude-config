@@ -38,6 +38,21 @@ else
     fi
 fi
 
+# Symlink Jira credentials
+if [ -L "$HOME/.jira-mcp-credentials.json" ]; then
+    echo "✓ Jira MCP credentials symlink already exists"
+elif [ -e "$HOME/.jira-mcp-credentials.json" ]; then
+    echo "⚠️  ~/.jira-mcp-credentials.json exists but is not a symlink. Please remove it manually."
+    exit 1
+else
+    if [ -f "$CLAUDE_CONFIG_DIR/jira-credentials.json" ]; then
+        ln -sf "$CLAUDE_CONFIG_DIR/jira-credentials.json" "$HOME/.jira-mcp-credentials.json"
+        echo "✓ Created Jira MCP credentials symlink"
+    else
+        echo "⚠️  jira-credentials.json not found, skipping Jira credentials symlink"
+    fi
+fi
+
 # Install MCP servers via claude mcp add
 echo ""
 echo "📦 Installing MCP servers..."
@@ -55,12 +70,22 @@ else
     fi
 fi
 
-# Add Jira MCP server
+# Add Jira MCP server with credentials if available
 if claude mcp list 2>/dev/null | grep -q "jira:"; then
     echo "✓ Jira MCP server already configured"
 else
-    claude mcp add jira -- npx -y mcp-jira-stdio
-    echo "✓ Added Jira MCP server"
+    if [ -f "$HOME/.jira-mcp-credentials.json" ]; then
+        # Read credentials from JSON file
+        JIRA_URL=$(grep -o '"JIRA_URL"[[:space:]]*:[[:space:]]*"[^"]*"' "$HOME/.jira-mcp-credentials.json" | sed 's/.*: "\(.*\)"/\1/')
+        JIRA_USERNAME=$(grep -o '"JIRA_USERNAME"[[:space:]]*:[[:space:]]*"[^"]*"' "$HOME/.jira-mcp-credentials.json" | sed 's/.*: "\(.*\)"/\1/')
+        JIRA_API_TOKEN=$(grep -o '"JIRA_API_TOKEN"[[:space:]]*:[[:space:]]*"[^"]*"' "$HOME/.jira-mcp-credentials.json" | sed 's/.*: "\(.*\)"/\1/')
+        
+        claude mcp add jira -e JIRA_URL="$JIRA_URL" -e JIRA_USERNAME="$JIRA_USERNAME" -e JIRA_API_TOKEN="$JIRA_API_TOKEN" -- npx -y mcp-jira-stdio
+        echo "✓ Added Jira MCP server with credentials"
+    else
+        claude mcp add jira -- npx -y mcp-jira-stdio
+        echo "✓ Added Jira MCP server (no credentials configured)"
+    fi
 fi
 
 echo ""
@@ -69,6 +94,9 @@ echo ""
 echo "Symlinks created:"
 echo "  ~/.claude/commands -> ~/.claude-config/commands"
 echo "  ~/.slack-mcp-tokens.json -> ~/.claude-config/slack-credentials.json"
+if [ -L "$HOME/.jira-mcp-credentials.json" ]; then
+    echo "  ~/.jira-mcp-credentials.json -> ~/.claude-config/jira-credentials.json"
+fi
 echo ""
 echo "MCP servers installed:"
 claude mcp list
