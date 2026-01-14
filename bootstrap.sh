@@ -53,6 +53,21 @@ else
     fi
 fi
 
+# Symlink Slab credentials
+if [ -L "$HOME/.slab-mcp-credentials.json" ]; then
+    echo "✓ Slab MCP credentials symlink already exists"
+elif [ -e "$HOME/.slab-mcp-credentials.json" ]; then
+    echo "⚠️  ~/.slab-mcp-credentials.json exists but is not a symlink. Please remove it manually."
+    exit 1
+else
+    if [ -f "$CLAUDE_CONFIG_DIR/slab-credentials.json" ]; then
+        ln -sf "$CLAUDE_CONFIG_DIR/slab-credentials.json" "$HOME/.slab-mcp-credentials.json"
+        echo "✓ Created Slab MCP credentials symlink"
+    else
+        echo "⚠️  slab-credentials.json not found, skipping Slab credentials symlink"
+    fi
+fi
+
 # Install MCP servers via claude mcp add (system-wide with --scope user)
 echo ""
 echo "📦 Installing MCP servers (system-wide)..."
@@ -94,6 +109,29 @@ else
     fi
 fi
 
+# Add Slab MCP server with credentials if available
+if claude mcp list 2>/dev/null | grep -q "slab:"; then
+    echo "✓ Slab MCP server already configured"
+else
+    if [ -f "$HOME/.slab-mcp-credentials.json" ]; then
+        # Read credentials from JSON file
+        SLAB_API_TOKEN=$(grep -o '"SLAB_API_TOKEN"[[:space:]]*:[[:space:]]*"[^"]*"' "$HOME/.slab-mcp-credentials.json" | sed 's/.*: "\(.*\)"/\1/')
+        SLAB_TEAM=$(grep -o '"SLAB_TEAM"[[:space:]]*:[[:space:]]*"[^"]*"' "$HOME/.slab-mcp-credentials.json" | sed 's/.*: "\(.*\)"/\1/')
+        
+        # Only add with credentials if they are not placeholder values
+        if [[ "$SLAB_API_TOKEN" != "your-slab-api-token-here" && "$SLAB_TEAM" != "your-team-domain" && -n "$SLAB_API_TOKEN" ]]; then
+            claude mcp add --scope user slab -e SLAB_API_TOKEN="$SLAB_API_TOKEN" -e SLAB_TEAM="$SLAB_TEAM" -- npx -y @russwyte/slabby
+            echo "✓ Added Slab MCP server with credentials"
+        else
+            claude mcp add --scope user slab -- npx -y @russwyte/slabby
+            echo "⚠️  Added Slab MCP server without credentials (update slab-credentials.json and re-run)"
+        fi
+    else
+        claude mcp add --scope user slab -- npx -y @russwyte/slabby
+        echo "✓ Added Slab MCP server (no credentials configured)"
+    fi
+fi
+
 echo ""
 echo "✅ Bootstrap complete!"
 echo ""
@@ -102,6 +140,9 @@ echo "  ~/.claude/commands -> ~/.claude-config/commands"
 echo "  ~/.slack-mcp-tokens.json -> ~/.claude-config/slack-credentials.json"
 if [ -L "$HOME/.jira-mcp-credentials.json" ]; then
     echo "  ~/.jira-mcp-credentials.json -> ~/.claude-config/jira-credentials.json"
+fi
+if [ -L "$HOME/.slab-mcp-credentials.json" ]; then
+    echo "  ~/.slab-mcp-credentials.json -> ~/.claude-config/slab-credentials.json"
 fi
 echo ""
 echo "MCP servers installed (system-wide):"
