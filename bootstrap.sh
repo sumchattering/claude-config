@@ -81,7 +81,7 @@ else
         JIRA_API_TOKEN=$(grep -o '"JIRA_API_TOKEN"[[:space:]]*:[[:space:]]*"[^"]*"' "$HOME/.jira-mcp-credentials.json" | sed 's/.*: "\(.*\)"/\1/')
         
         # Only add with credentials if they are not placeholder values
-        if [[ "$JIRA_BASE_URL" != "https://your-domain.atlassian.net" && "$JIRA_EMAIL" != "your-email@example.com" ]]; then
+        if [[ "$JIRA_BASE_URL" != "https://your-domain.atlassian.net" && "$JIRA_EMAIL" != "your-email@example.com" && -n "$JIRA_API_TOKEN" ]]; then
             claude mcp add --scope user jira -e JIRA_BASE_URL="$JIRA_BASE_URL" -e JIRA_EMAIL="$JIRA_EMAIL" -e JIRA_API_TOKEN="$JIRA_API_TOKEN" -- npx -y mcp-jira-stdio
             echo "✓ Added Jira MCP server with credentials"
         else
