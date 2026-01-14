@@ -1,13 +1,19 @@
 {
   "mcpServers": {
     "slack": {
-      "type": "stdio",
-      "command": "slack-mcp-server"
+      "command": "slack-mcp-server",
+      "env": {
+        "SLACK_TOKEN_FILE": "/Users/sumeru.chatterjee/.slack-mcp-tokens.json"
+      }
     },
     "jira": {
-      "type": "stdio",
       "command": "npx",
-      "args": ["-y", "mcp-jira-stdio"]
+      "args": ["-y", "mcp-jira-stdio"],
+      "env": {
+        "JIRA_URL": "",
+        "JIRA_USERNAME": "",
+        "JIRA_API_TOKEN": ""
+      }
     }
   }
 }
