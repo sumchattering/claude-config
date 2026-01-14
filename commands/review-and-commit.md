@@ -1,12 +1,14 @@
 ---
-description: Review code changes using a Sonnet subagent, then commit with a meaningful message
+description: Review code changes using a Sonnet subagent, then commit and push with a meaningful message
 argument-hint: [optional: commit-message-hint]
 allowed-tools: [Bash, Read, Write, Edit, Grep, Glob, Task]
 ---
 
 # Review and Commit
 
-This command reviews your code changes using a Sonnet subagent, addresses any issues found, and then creates a meaningful commit.
+This command reviews your code changes using a Sonnet subagent, addresses any issues found, then creates a meaningful commit and pushes it to the remote repository.
+
+**Note**: This command will push your changes after committing. If you only want to commit without pushing, use a regular git commit workflow instead.
 
 ## Arguments
 
@@ -102,19 +104,35 @@ EOF
 )"
 ```
 
-### 5. Confirm Success
+### 5. Push Changes
 
-- Run `git status` to verify the commit succeeded
+- First, check if an upstream branch is configured:
+  - Run `git rev-parse --abbrev-ref --symbolic-full-name @{u} 2>/dev/null`
+  - If no upstream exists (command fails), push with upstream tracking: `git push -u origin <current-branch-name>`
+  - If upstream exists, push normally: `git push`
+
+- **Handle push failures gracefully**:
+  - **No upstream**: Use `git push -u origin <branch>` to set upstream
+  - **Network errors**: Inform user the commit succeeded locally but push failed, suggest retrying with `git push`
+  - **Authentication failures**: Inform user to check their git credentials
+  - **Rejected (non-fast-forward)**: Inform user they need to pull first with `git pull --rebase` then push again
+  - **Permission denied**: Inform user to check repository access permissions
+
+### 6. Confirm Success
+
+- Run `git status` to verify the commit and push succeeded
 - Run `git log -1` to show the user the committed changes
-- Report success to the user
+- Report success to the user (include both commit hash and confirmation that push succeeded)
 
 ## Safety Rules
 
 - NEVER commit files with secrets (.env, credentials.json, *.key, etc.)
 - NEVER skip the review step
-- NEVER force push
+- NEVER force push (no `--force` or `-f` flags)
 - NEVER update git config
 - If the review finds security vulnerabilities, strongly recommend fixing before committing
+- Verify upstream branch configuration before pushing
+- If push fails, always inform the user that the local commit succeeded
 
 ## Example Flow
 
@@ -129,5 +147,6 @@ User: /review-and-commit add login validation
    - Suggested commit: "Add input validation to login form fields"
 4. Claude shows review to user
 5. Claude stages ALL changes and commits with the suggested message
-6. Claude confirms: "Committed: abc123 - Add input validation to login form fields"
+6. Claude pushes the changes to remote
+7. Claude confirms: "Committed and pushed: abc123 - Add input validation to login form fields"
 ```
