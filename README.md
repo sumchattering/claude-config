@@ -58,6 +58,9 @@ Automates git workflow: commit, push, and create PR with smart ticket detection.
 ### `/post-sdk-pr-to-slack`
 Posts PR links to the `eng-sdk-team` Slack channel with proper formatting and tags.
 
+### `/restart`
+Safely quits Claude Code and optionally attempts to restart with the current conversation.
+
 ## MCP Servers
 
 ### Slack MCP
