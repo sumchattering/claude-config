@@ -53,9 +53,9 @@ else
     fi
 fi
 
-# Install MCP servers via claude mcp add
+# Install MCP servers via claude mcp add (system-wide with --scope user)
 echo ""
-echo "📦 Installing MCP servers..."
+echo "📦 Installing MCP servers (system-wide)..."
 
 # Check if slack-mcp-server is installed
 if ! command -v slack-mcp-server &> /dev/null; then
@@ -65,7 +65,7 @@ else
     if claude mcp list 2>/dev/null | grep -q "slack:"; then
         echo "✓ Slack MCP server already configured"
     else
-        claude mcp add slack slack-mcp-server -e SLACK_TOKEN_FILE="$HOME/.slack-mcp-tokens.json"
+        claude mcp add --scope user slack slack-mcp-server -e SLACK_TOKEN_FILE="$HOME/.slack-mcp-tokens.json"
         echo "✓ Added Slack MCP server"
     fi
 fi
@@ -80,10 +80,10 @@ else
         JIRA_USERNAME=$(grep -o '"JIRA_USERNAME"[[:space:]]*:[[:space:]]*"[^"]*"' "$HOME/.jira-mcp-credentials.json" | sed 's/.*: "\(.*\)"/\1/')
         JIRA_API_TOKEN=$(grep -o '"JIRA_API_TOKEN"[[:space:]]*:[[:space:]]*"[^"]*"' "$HOME/.jira-mcp-credentials.json" | sed 's/.*: "\(.*\)"/\1/')
         
-        claude mcp add jira -e JIRA_URL="$JIRA_URL" -e JIRA_USERNAME="$JIRA_USERNAME" -e JIRA_API_TOKEN="$JIRA_API_TOKEN" -- npx -y mcp-jira-stdio
+        claude mcp add --scope user jira -e JIRA_URL="$JIRA_URL" -e JIRA_USERNAME="$JIRA_USERNAME" -e JIRA_API_TOKEN="$JIRA_API_TOKEN" -- npx -y mcp-jira-stdio
         echo "✓ Added Jira MCP server with credentials"
     else
-        claude mcp add jira -- npx -y mcp-jira-stdio
+        claude mcp add --scope user jira -- npx -y mcp-jira-stdio
         echo "✓ Added Jira MCP server (no credentials configured)"
     fi
 fi
@@ -98,5 +98,5 @@ if [ -L "$HOME/.jira-mcp-credentials.json" ]; then
     echo "  ~/.jira-mcp-credentials.json -> ~/.claude-config/jira-credentials.json"
 fi
 echo ""
-echo "MCP servers installed:"
+echo "MCP servers installed (system-wide):"
 claude mcp list
