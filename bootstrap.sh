@@ -34,8 +34,20 @@ else
     echo "✓ Created mcp.json symlink"
 fi
 
+# Symlink Slack MCP tokens
+if [ -L "$HOME/.slack-mcp-tokens.json" ]; then
+    echo "✓ Slack MCP tokens symlink already exists"
+elif [ -e "$HOME/.slack-mcp-tokens.json" ]; then
+    echo "⚠️  ~/.slack-mcp-tokens.json exists but is not a symlink. Please remove it manually."
+    exit 1
+else
+    ln -sf "$CLAUDE_CONFIG_DIR/slack-credentials.json" "$HOME/.slack-mcp-tokens.json"
+    echo "✓ Created Slack MCP tokens symlink"
+fi
+
 echo "✅ Bootstrap complete!"
 echo ""
 echo "Symlinks created:"
 echo "  ~/.claude/commands -> ~/.claude-config/commands"
 echo "  ~/.claude/mcp.json -> ~/.claude-config/mcp.json"
+echo "  ~/.slack-mcp-tokens.json -> ~/.claude-config/slack-credentials.json"
