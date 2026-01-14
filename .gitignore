@@ -1,6 +1,5 @@
 # Track everything in this repo
 
 # MCP credentials
-.slack-mcp-tokens.json
+slack-credentials.json
 jira-credentials.json
-*.credentials.json
