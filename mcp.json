@@ -1,21 +1,13 @@
 {
   "mcpServers": {
     "slack": {
-      "command": "npx",
-      "args": ["-y", "@teamsparta/mcp-server-slack"],
-      "env": {
-        "SLACK_TOKEN": "",
-        "SLACK_COOKIE": ""
-      }
+      "type": "stdio",
+      "command": "slack-mcp-server"
     },
     "jira": {
+      "type": "stdio",
       "command": "npx",
-      "args": ["-y", "mcp-jira-stdio"],
-      "env": {
-        "JIRA_URL": "",
-        "JIRA_USERNAME": "",
-        "JIRA_API_TOKEN": ""
-      }
+      "args": ["-y", "mcp-jira-stdio"]
     }
   }
 }
