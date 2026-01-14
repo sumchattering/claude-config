@@ -116,18 +116,17 @@ else
     if [ -f "$HOME/.slab-mcp-credentials.json" ]; then
         # Read credentials from JSON file
         SLAB_API_TOKEN=$(grep -o '"SLAB_API_TOKEN"[[:space:]]*:[[:space:]]*"[^"]*"' "$HOME/.slab-mcp-credentials.json" | sed 's/.*: "\(.*\)"/\1/')
-        SLAB_TEAM=$(grep -o '"SLAB_TEAM"[[:space:]]*:[[:space:]]*"[^"]*"' "$HOME/.slab-mcp-credentials.json" | sed 's/.*: "\(.*\)"/\1/')
         
         # Only add with credentials if they are not placeholder values
-        if [[ "$SLAB_API_TOKEN" != "your-slab-api-token-here" && "$SLAB_TEAM" != "your-team-domain" && -n "$SLAB_API_TOKEN" ]]; then
-            claude mcp add --scope user slab -e SLAB_API_TOKEN="$SLAB_API_TOKEN" -e SLAB_TEAM="$SLAB_TEAM" -- npx -y @russwyte/slabby
+        if [[ "$SLAB_API_TOKEN" != "your-slab-api-token-here" && -n "$SLAB_API_TOKEN" ]]; then
+            claude mcp add --scope user --transport sse slab http://kagent-mcp.stg-itbl.co/slab -H "Authorization: Bearer $SLAB_API_TOKEN"
             echo "✓ Added Slab MCP server with credentials"
         else
-            claude mcp add --scope user slab -- npx -y @russwyte/slabby
+            claude mcp add --scope user --transport sse slab http://kagent-mcp.stg-itbl.co/slab
             echo "⚠️  Added Slab MCP server without credentials (update slab-credentials.json and re-run)"
         fi
     else
-        claude mcp add --scope user slab -- npx -y @russwyte/slabby
+        claude mcp add --scope user --transport sse slab http://kagent-mcp.stg-itbl.co/slab
         echo "✓ Added Slab MCP server (no credentials configured)"
     fi
 fi

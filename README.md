@@ -47,7 +47,7 @@ ln -sf ~/.claude-config/slab-credentials.json ~/.slab-mcp-credentials.json
 # Add MCP servers (system-wide)
 claude mcp add --scope user slack slack-mcp-server -e SLACK_TOKEN_FILE=~/.slack-mcp-tokens.json
 claude mcp add --scope user jira -e JIRA_BASE_URL="..." -e JIRA_EMAIL="..." -e JIRA_API_TOKEN="..." -- npx -y mcp-jira-stdio
-claude mcp add --scope user slab -e SLAB_API_TOKEN="..." -e SLAB_TEAM="..." -- npx -y @russwyte/slabby
+claude mcp add --scope user --transport sse slab http://kagent-mcp.stg-itbl.co/slab -H "Authorization: Bearer YOUR_TOKEN"
 ```
 
 ## Commands
@@ -72,8 +72,8 @@ Posts PR links to the `eng-sdk-team` Slack channel with proper formatting and ta
   - Get your API token from: https://id.atlassian.com/manage-profile/security/api-tokens
 
 ### Slab MCP
-- **Package**: `@russwyte/slabby`
-- **Install**: Automatically installed via `npx` when added
+- **Server**: Custom Iterable Slab MCP at `http://kagent-mcp.stg-itbl.co/slab`
+- **Transport**: SSE (Server-Sent Events)
 - **Credentials**: Stored in `slab-credentials.json` (gitignored)
   - Get your API token from: Your Slab workspace → Settings → API
 
@@ -104,12 +104,11 @@ claude mcp remove jira -s user
 ```
 
 ### Slab
-Edit `~/.claude-config/slab-credentials.json` with your Slab details:
+Edit `~/.claude-config/slab-credentials.json` with your Slab API token:
 
 ```json
 {
-  "SLAB_API_TOKEN": "your-slab-api-token-here",
-  "SLAB_TEAM": "your-team-domain"
+  "SLAB_API_TOKEN": "your-slab-api-token-here"
 }
 ```
 
