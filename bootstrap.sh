@@ -12,6 +12,32 @@ echo "🚀 Bootstrapping Claude Config..."
 # Create ~/.claude directory if it doesn't exist
 mkdir -p "$CLAUDE_DIR"
 
+# Merge settings.json with existing settings (preserving user settings, adding permissions)
+echo ""
+echo "🔧 Configuring Claude permissions..."
+SETTINGS_FILE="$CLAUDE_DIR/settings.json"
+CONFIG_SETTINGS="$CLAUDE_CONFIG_DIR/settings.json"
+
+if [ -f "$CONFIG_SETTINGS" ]; then
+    if [ -f "$SETTINGS_FILE" ]; then
+        # Merge: take permissions from config, preserve everything else from existing
+        if command -v jq &> /dev/null; then
+            # Use jq to merge settings (config permissions take precedence)
+            jq -s '.[0] * .[1]' "$SETTINGS_FILE" "$CONFIG_SETTINGS" > "$SETTINGS_FILE.tmp" && mv "$SETTINGS_FILE.tmp" "$SETTINGS_FILE"
+            echo "✓ Merged permissions into existing settings.json"
+        else
+            echo "⚠️  jq not found. Install it with: brew install jq"
+            echo "   Skipping settings merge - manually add permissions from $CONFIG_SETTINGS"
+        fi
+    else
+        # No existing settings, just copy
+        cp "$CONFIG_SETTINGS" "$SETTINGS_FILE"
+        echo "✓ Created settings.json with Claude permissions"
+    fi
+else
+    echo "⚠️  settings.json not found in config directory"
+fi
+
 # Symlink commands directory
 if [ -L "$CLAUDE_DIR/commands" ]; then
     echo "✓ Commands symlink already exists"
