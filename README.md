@@ -144,7 +144,7 @@ The bootstrap script:
 Edit `ccstatusline-settings.json` directly (changes apply automatically via symlink), or run the interactive TUI:
 
 ```bash
-ccstatusline
+npx ccstatusline@latest
 ```
 
 **Requirements:** A terminal with a [Powerline-compatible font](https://github.com/powerline/fonts) for proper arrow rendering.
