@@ -2,6 +2,12 @@
 
 **Dotfiles for the AI age.** A framework for managing Claude Code configurations, MCP servers, and custom slash commands across all your projects.
 
+---
+
+Managing Claude Code across multiple repos and machines gets messy fast—scattered `.mcp.json` files, duplicated commands, credentials everywhere. I wanted one place to version, share, and bootstrap my AI setup the same way we do dotfiles. This repo is that layer.
+
+---
+
 ## Why?
 
 Just like traditional dotfiles let you sync your shell configuration across machines, `claude-config` lets you:
