@@ -1,0 +1,38 @@
+{
+  "mcpServers": {
+    "slack": {
+      "command": "slack-mcp-server",
+      "args": [],
+      "env": {
+        "SLACK_TOKEN_FILE": "$HOME/.slack-mcp-tokens.json"
+      },
+      "repositories": [
+        "$HOME/MyProjects/iterable-swift-sdk",
+        "$HOME/MyProjects/iterable-android-sdk",
+        "$HOME/MyProjects/react-native-sdk"
+      ]
+    },
+    "jira": {
+      "command": "npx",
+      "args": ["-y", "mcp-jira-stdio"],
+      "envFile": "$HOME/.jira-mcp-credentials.json",
+      "repositories": [
+        "$HOME/MyProjects/iterable-swift-sdk",
+        "$HOME/MyProjects/iterable-android-sdk",
+        "$HOME/MyProjects/react-native-sdk"
+      ]
+    }
+  },
+  "commands": {
+    "global": [
+      "review.md",
+      "review-and-commit.md"
+    ],
+    "repositories": {
+      "$HOME/MyProjects/iterable-swift-sdk": [
+        "iterable-post-sdk-pr-to-slack.md",
+        "iterable-commit-push-pr.md"
+      ]
+    }
+  }
+}
