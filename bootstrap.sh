@@ -4,7 +4,7 @@
 
 set -e
 
-CLAUDE_CONFIG_DIR="$HOME/.claude-config"
+CLAUDE_CONFIG_DIR="$HOME/claude-config"
 CLAUDE_DIR="$HOME/.claude"
 CONFIG_FILE="$CLAUDE_CONFIG_DIR/bootstrap-config.json"
 

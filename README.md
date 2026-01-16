@@ -14,21 +14,21 @@ Just like traditional dotfiles let you sync your shell configuration across mach
 ## Quick Start
 
 ```bash
-# Clone to ~/.claude-config
-git clone https://github.com/anthropics/claude-config.git ~/.claude-config
+# Clone to ~/claude-config
+git clone https://github.com/YOUR_USERNAME/claude-config.git ~/claude-config
 
 # Copy example credentials and configure them
-cp ~/.claude-config/*-credentials.json.example ~/.claude-config/*-credentials.json
+cp ~/claude-config/*-credentials.json.example ~/claude-config/*-credentials.json
 # Edit the credential files with your actual tokens
 
 # Run bootstrap
-~/.claude-config/bootstrap.sh
+~/claude-config/bootstrap.sh
 ```
 
 ## Structure
 
 ```
-~/.claude-config/
+~/claude-config/
 ├── bootstrap.sh                  # Setup script - run this to apply your config
 ├── bootstrap-config.json         # Define which commands/MCPs go where
 ├── settings.json                 # Claude Code permissions and settings
@@ -113,7 +113,7 @@ The `settings.json` file contains Claude Code permissions and settings that get 
 
 ## How Bootstrap Works
 
-When you run `~/.claude-config/bootstrap.sh`, it:
+When you run `~/claude-config/bootstrap.sh`, it:
 
 1. **Merges settings** - Combines your `settings.json` with the global Claude settings
 2. **Creates credential symlinks** - Links credential files to expected locations
@@ -132,7 +132,7 @@ cp jira-credentials.json.example jira-credentials.json
 
 # Edit with your actual credentials
 # Then re-run bootstrap
-~/.claude-config/bootstrap.sh
+~/claude-config/bootstrap.sh
 ```
 
 ## Syncing Across Machines
@@ -141,14 +141,14 @@ Since this is a git repository, sync your configuration across machines:
 
 ```bash
 # On a new machine
-git clone https://github.com/YOUR_USERNAME/claude-config.git ~/.claude-config
+git clone https://github.com/YOUR_USERNAME/claude-config.git ~/claude-config
 
 # Set up credentials (these aren't synced)
-cp ~/.claude-config/*-credentials.json.example ~/.claude-config/*-credentials.json
+cp ~/claude-config/*-credentials.json.example ~/claude-config/*-credentials.json
 # Edit credentials...
 
 # Bootstrap
-~/.claude-config/bootstrap.sh
+~/claude-config/bootstrap.sh
 ```
 
 ## Requirements
