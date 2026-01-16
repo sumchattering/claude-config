@@ -40,6 +40,12 @@ else
     echo "  ✓ ccstatusline installed"
 fi
 
+# Copy ccstatusline config
+CCSTATUSLINE_CONFIG_DIR="$HOME/.config/ccstatusline"
+mkdir -p "$CCSTATUSLINE_CONFIG_DIR"
+cp "$CLAUDE_CONFIG_DIR/ccstatusline-settings.json" "$CCSTATUSLINE_CONFIG_DIR/settings.json"
+echo "  ✓ ccstatusline config installed"
+
 # Helper function to expand $HOME in paths
 expand_path() {
     echo "${1//\$HOME/$HOME}"
