@@ -21,15 +21,32 @@
         "$HOME/MyProjects/iterable-android-sdk",
         "$HOME/MyProjects/react-native-sdk"
       ]
+    },
+    "iterable": {
+      "command": "npx",
+      "args": ["-y", "@iterable/mcp"],
+      "envFile": "$HOME/.iterable-mcp-credentials.json",
+      "repositories": [
+        "$HOME/MyProjects/iterable-swift-sdk",
+        "$HOME/MyProjects/iterable-android-sdk",
+        "$HOME/MyProjects/react-native-sdk"
+      ]
     }
   },
   "commands": {
     "global": [
-      "review.md",
-      "review-and-commit.md"
+      "review-uncommitted.md"
     ],
     "repositories": {
       "$HOME/MyProjects/iterable-swift-sdk": [
+        "iterable-post-sdk-pr-to-slack.md",
+        "iterable-commit-push-pr.md"
+      ],
+      "$HOME/MyProjects/iterable-android-sdk": [
+        "iterable-post-sdk-pr-to-slack.md",
+        "iterable-commit-push-pr.md"
+      ],
+      "$HOME/MyProjects/react-native-sdk": [
         "iterable-post-sdk-pr-to-slack.md",
         "iterable-commit-push-pr.md"
       ]

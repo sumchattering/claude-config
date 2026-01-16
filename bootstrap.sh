@@ -80,6 +80,18 @@ if [ -f "$CLAUDE_CONFIG_DIR/jira-credentials.json" ]; then
     fi
 fi
 
+# Iterable credentials
+if [ -f "$CLAUDE_CONFIG_DIR/iterable-credentials.json" ]; then
+    if [ -L "$HOME/.iterable-mcp-credentials.json" ]; then
+        echo "✓ Iterable credentials symlink already exists"
+    elif [ -e "$HOME/.iterable-mcp-credentials.json" ]; then
+        echo "⚠️  ~/.iterable-mcp-credentials.json exists but is not a symlink"
+    else
+        ln -sf "$CLAUDE_CONFIG_DIR/iterable-credentials.json" "$HOME/.iterable-mcp-credentials.json"
+        echo "✓ Created Iterable credentials symlink"
+    fi
+fi
+
 # ============================================================================
 # COMMANDS
 # ============================================================================
