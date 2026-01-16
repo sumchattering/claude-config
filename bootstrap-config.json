@@ -26,6 +26,10 @@
       "command": "npx",
       "args": ["-y", "@iterable/mcp"],
       "envFile": "$HOME/.iterable-mcp-credentials.json",
+      "env": {
+        "ITERABLE_ENABLE_WRITES": "true",
+        "ITERABLE_USER_PII": "false"
+      },
       "repositories": [
         "$HOME/MyProjects/iterable-swift-sdk",
         "$HOME/MyProjects/iterable-android-sdk",
