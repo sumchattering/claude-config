@@ -137,11 +137,11 @@ It displays:
 
 The bootstrap script:
 1. Installs `ccstatusline` globally via npm (if not already installed)
-2. Symlinks the config from `ccstatusline-settings.json` to `~/.config/ccstatusline/settings.json`
+2. Copies the config from `ccstatusline-settings.json` to `~/.config/ccstatusline/settings.json`
 
 **Customizing the status line:**
 
-Edit `ccstatusline-settings.json` directly (changes apply automatically via symlink), or run the interactive TUI:
+Edit `ccstatusline-settings.json` and re-run `bootstrap.sh` to apply changes, or run the interactive TUI:
 
 ```bash
 ccstatusline
@@ -154,7 +154,7 @@ ccstatusline
 When you run `~/claude-config/bootstrap.sh`, it:
 
 1. **Installs ccstatusline** - Installs the status line tool globally via npm (if not present)
-2. **Symlinks status line config** - Links `ccstatusline-settings.json` to `~/.config/ccstatusline/settings.json`
+2. **Copies status line config** - Copies `ccstatusline-settings.json` to `~/.config/ccstatusline/settings.json`
 3. **Merges settings** - Combines your `settings.json` with the global Claude settings
 4. **Creates credential symlinks** - Links credential files to expected locations
 5. **Symlinks commands** - Links commands to `~/.claude/commands/` (global) or `repo/.claude/commands/` (per-repo)
