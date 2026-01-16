@@ -1,123 +1,162 @@
-# Claude Config
+# claude-config
 
-Personal Claude Code configuration, commands, and MCP settings.
+**Dotfiles for the AI age.** A framework for managing Claude Code configurations, MCP servers, and custom slash commands across all your projects.
+
+## Why?
+
+Just like traditional dotfiles let you sync your shell configuration across machines, `claude-config` lets you:
+
+- **Centralize** your Claude Code settings, commands, and MCP server configurations
+- **Version control** your AI assistant setup
+- **Bootstrap** new machines or projects with a single command
+- **Share** commands across multiple repositories or keep them project-specific
+
+## Quick Start
+
+```bash
+# Clone to ~/.claude-config
+git clone https://github.com/anthropics/claude-config.git ~/.claude-config
+
+# Copy example credentials and configure them
+cp ~/.claude-config/*-credentials.json.example ~/.claude-config/*-credentials.json
+# Edit the credential files with your actual tokens
+
+# Run bootstrap
+~/.claude-config/bootstrap.sh
+```
 
 ## Structure
 
 ```
-.claude-config/
-├── commands/                    # Slash commands for Claude Code
-│   ├── commit-push-pr.md
-│   └── post-sdk-pr-to-slack.md
-├── bootstrap.sh                 # Setup script for symlinks and MCP servers
-├── slack-credentials.json       # Slack MCP credentials (gitignored)
-├── jira-credentials.json        # Jira MCP credentials (gitignored)
-├── slab-credentials.json        # Slab MCP credentials (gitignored)
-└── README.md
+~/.claude-config/
+├── bootstrap.sh                  # Setup script - run this to apply your config
+├── bootstrap-config.json         # Define which commands/MCPs go where
+├── settings.json                 # Claude Code permissions and settings
+├── commands/                     # Your slash commands (markdown files)
+│   ├── review-uncommitted.md     # Example: code review command
+│   └── your-command.md           # Add your own!
+├── *-credentials.json            # MCP credentials (gitignored)
+└── *-credentials.json.example    # Template credential files (safe to commit)
 ```
 
-## Installation
+## Configuration
 
-Run the bootstrap script to set up everything:
+### bootstrap-config.json
 
-```bash
-~/.claude-config/bootstrap.sh
-```
+This is the heart of the configuration. It defines:
 
-This will:
-- Symlink commands to `~/.claude/commands`
-- Symlink Slack credentials to `~/.slack-mcp-tokens.json`
-- Symlink Jira credentials to `~/.jira-mcp-credentials.json`
-- Symlink Slab credentials to `~/.slab-mcp-credentials.json`
-- Install Slack, Jira, and Slab MCP servers system-wide via `claude mcp add --scope user`
-
-### Manual Installation
-
-If you prefer to set up manually:
-
-```bash
-# Symlink commands
-ln -sf ~/.claude-config/commands ~/.claude/commands
-
-# Symlink credentials
-ln -sf ~/.claude-config/slack-credentials.json ~/.slack-mcp-tokens.json
-ln -sf ~/.claude-config/jira-credentials.json ~/.jira-mcp-credentials.json
-ln -sf ~/.claude-config/slab-credentials.json ~/.slab-mcp-credentials.json
-
-# Add MCP servers (system-wide)
-claude mcp add --scope user slack slack-mcp-server -e SLACK_TOKEN_FILE=~/.slack-mcp-tokens.json
-claude mcp add --scope user jira -e JIRA_BASE_URL="..." -e JIRA_EMAIL="..." -e JIRA_API_TOKEN="..." -- npx -y mcp-jira-stdio
-claude mcp add --scope user --transport sse slab http://kagent-mcp.stg-itbl.co/slab -H "Authorization: Bearer YOUR_TOKEN"
-```
-
-## Commands
-
-### `/commit-push-pr`
-Automates git workflow: commit, push, and create PR with smart ticket detection.
-
-### `/post-sdk-pr-to-slack`
-Posts PR links to the `eng-sdk-team` Slack channel with proper formatting and tags.
-
-## MCP Servers
-
-### Slack MCP
-- **Package**: `@teamsparta/mcp-server-slack`
-- **Install**: `npm install -g @teamsparta/mcp-server-slack`
-- **Credentials**: Stored in `slack-credentials.json` (gitignored)
-
-### Jira MCP
-- **Package**: `mcp-jira-stdio`
-- **Install**: Automatically installed via `npx` when added
-- **Credentials**: Stored in `jira-credentials.json` (gitignored)
-  - Get your API token from: https://id.atlassian.com/manage-profile/security/api-tokens
-
-### Slab MCP
-- **Server**: Custom Iterable Slab MCP at `http://kagent-mcp.stg-itbl.co/slab`
-- **Transport**: SSE (Server-Sent Events)
-- **Credentials**: Stored in `slab-credentials.json` (gitignored)
-  - Get your API token from: Your Slab workspace → Settings → API
-
-## Setup Credentials
-
-### Slack
-The `slack-credentials.json` should already be configured with your tokens.
-
-### Jira
-Edit `~/.claude-config/jira-credentials.json` with your Jira details:
+1. **MCP Servers** - Which MCP servers to install and where
+2. **Commands** - Which slash commands to make available globally or per-repository
 
 ```json
 {
-  "JIRA_BASE_URL": "https://your-domain.atlassian.net",
-  "JIRA_EMAIL": "your-email@example.com",
-  "JIRA_API_TOKEN": "your-api-token-here"
+  "mcpServers": {
+    "slack": {
+      "command": "slack-mcp-server",
+      "args": [],
+      "env": {
+        "SLACK_TOKEN_FILE": "$HOME/.slack-mcp-tokens.json"
+      },
+      "repositories": [
+        "$HOME/projects/my-app",
+        "$HOME/projects/another-app"
+      ]
+    },
+    "jira": {
+      "command": "npx",
+      "args": ["-y", "mcp-jira-stdio"],
+      "envFile": "$HOME/.jira-mcp-credentials.json",
+      "repositories": ["$HOME/projects/my-app"]
+    }
+  },
+  "commands": {
+    "global": [
+      "review-uncommitted.md"
+    ],
+    "repositories": {
+      "$HOME/projects/my-app": [
+        "deploy.md",
+        "post-pr-to-slack.md"
+      ]
+    }
+  }
 }
 ```
 
-Then re-run the bootstrap script to apply the credentials:
+### Adding Commands
+
+Commands are markdown files in the `commands/` directory. They become available as `/command-name` in Claude Code.
+
+```markdown
+<!-- commands/my-command.md -->
+# My Command
+
+Instructions for Claude when this command is invoked...
+```
+
+- **Global commands**: Listed under `commands.global` - available in all projects
+- **Repository commands**: Listed under `commands.repositories` - only available in specific repos
+
+### Adding MCP Servers
+
+MCP servers are configured in the `mcpServers` section:
+
+- `command`: The executable to run
+- `args`: Command line arguments
+- `env`: Environment variables (supports `$HOME` expansion)
+- `envFile`: Path to a JSON file containing environment variables
+- `repositories`: Which repositories should have this MCP server
+
+### Settings
+
+The `settings.json` file contains Claude Code permissions and settings that get merged into your global `~/.claude/settings.json`.
+
+## How Bootstrap Works
+
+When you run `~/.claude-config/bootstrap.sh`, it:
+
+1. **Merges settings** - Combines your `settings.json` with the global Claude settings
+2. **Creates credential symlinks** - Links credential files to expected locations
+3. **Symlinks commands** - Links commands to `~/.claude/commands/` (global) or `repo/.claude/commands/` (per-repo)
+4. **Configures MCP servers** - Creates/updates `.mcp.json` in each repository
+5. **Updates .gitignore** - Adds `.claude/` and `.mcp.json` to repositories' gitignores
+
+## Credentials
+
+Credential files are gitignored by default. Use the `.example` files as templates:
 
 ```bash
-# First, remove the existing Jira MCP server
-claude mcp remove jira -s user
+# Copy and edit credential files
+cp slack-credentials.json.example slack-credentials.json
+cp jira-credentials.json.example jira-credentials.json
 
-# Then re-run bootstrap to add it with credentials
+# Edit with your actual credentials
+# Then re-run bootstrap
 ~/.claude-config/bootstrap.sh
 ```
 
-### Slab
-Edit `~/.claude-config/slab-credentials.json` with your Slab API token:
+## Syncing Across Machines
 
-```json
-{
-  "SLAB_API_TOKEN": "your-slab-api-token-here"
-}
-```
-
-Then re-run the bootstrap script to apply the credentials:
+Since this is a git repository, sync your configuration across machines:
 
 ```bash
-# First, remove the existing Slab MCP server
-claude mcp remove slab -s user
+# On a new machine
+git clone https://github.com/YOUR_USERNAME/claude-config.git ~/.claude-config
 
-# Then re-run bootstrap to add it with credentials
+# Set up credentials (these aren't synced)
+cp ~/.claude-config/*-credentials.json.example ~/.claude-config/*-credentials.json
+# Edit credentials...
+
+# Bootstrap
 ~/.claude-config/bootstrap.sh
 ```
+
+## Requirements
+
+- [Claude Code](https://docs.anthropic.com/en/docs/claude-code) CLI installed
+- `jq` for JSON parsing (`brew install jq` on macOS)
+- Any MCP servers you want to use (e.g., `npm install -g slack-mcp-server`)
+
+## License
+
+MIT License - see [LICENSE](LICENSE) for details.
