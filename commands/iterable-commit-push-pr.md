@@ -52,12 +52,16 @@ Always try to detect the ticket number in this priority order:
 ### 2. Ensure Feature Branch
 
 - If on `master` branch:
+  - **Update master first**: Run `git pull --rebase origin master` to ensure master is up-to-date
   - Generate branch name based on $ARGUMENTS and changes:
     - If $ARGUMENTS contains ticket number (e.g., "SDK-296"): use format `feature/SDK-296-brief-description`
     - If $ARGUMENTS is just a name: use `feature/$ARGUMENTS`
     - If no $ARGUMENTS: auto-generate like `feature/add-dark-mode` or `fix/login-bug`
   - Create and checkout new branch from master: `git checkout -b branch-name`
 - If already on a feature branch:
+  - **Update master in background**: Run `git fetch origin master:master` to update local master without switching branches
+  - **Merge latest master**: Run `git merge master` to bring in latest changes from master
+  - If merge conflicts occur, inform the user and pause for resolution
   - Ensure we're branched from master by checking `git merge-base HEAD master`
   - If not properly branched from master, warn the user
 

@@ -1,0 +1,59 @@
+{
+  "mcpServers": {
+    "slack": {
+      "command": "slack-mcp-server",
+      "args": [],
+      "env": {
+        "SLACK_TOKEN_FILE": "$HOME/.slack-mcp-tokens.json"
+      },
+      "repositories": [
+        "$HOME/MyProjects/iterable-swift-sdk",
+        "$HOME/MyProjects/iterable-android-sdk",
+        "$HOME/MyProjects/react-native-sdk"
+      ]
+    },
+    "jira": {
+      "command": "npx",
+      "args": ["-y", "mcp-jira-stdio"],
+      "envFile": "$HOME/.jira-mcp-credentials.json",
+      "repositories": [
+        "$HOME/MyProjects/iterable-swift-sdk",
+        "$HOME/MyProjects/iterable-android-sdk",
+        "$HOME/MyProjects/react-native-sdk"
+      ]
+    },
+    "iterable": {
+      "command": "npx",
+      "args": ["-y", "@iterable/mcp"],
+      "envFile": "$HOME/.iterable-mcp-credentials.json",
+      "env": {
+        "ITERABLE_ENABLE_WRITES": "true",
+        "ITERABLE_USER_PII": "false"
+      },
+      "repositories": [
+        "$HOME/MyProjects/iterable-swift-sdk",
+        "$HOME/MyProjects/iterable-android-sdk",
+        "$HOME/MyProjects/react-native-sdk"
+      ]
+    }
+  },
+  "commands": {
+    "global": [
+      "review-uncommitted.md"
+    ],
+    "repositories": {
+      "$HOME/MyProjects/iterable-swift-sdk": [
+        "iterable-post-sdk-pr-to-slack.md",
+        "iterable-commit-push-pr.md"
+      ],
+      "$HOME/MyProjects/iterable-android-sdk": [
+        "iterable-post-sdk-pr-to-slack.md",
+        "iterable-commit-push-pr.md"
+      ],
+      "$HOME/MyProjects/react-native-sdk": [
+        "iterable-post-sdk-pr-to-slack.md",
+        "iterable-commit-push-pr.md"
+      ]
+    }
+  }
+}

@@ -1,148 +1,243 @@
 #!/bin/bash
 
-# Bootstrap script to set up Claude Config symlinks and MCP servers
+# Bootstrap script to set up Claude Config based on bootstrap-config.json
 
 set -e
 
 CLAUDE_CONFIG_DIR="$HOME/.claude-config"
 CLAUDE_DIR="$HOME/.claude"
+CONFIG_FILE="$CLAUDE_CONFIG_DIR/bootstrap-config.json"
 
 echo "🚀 Bootstrapping Claude Config..."
+
+# Check for jq (required for parsing JSON config)
+if ! command -v jq &> /dev/null; then
+    echo "❌ jq is required but not found. Install it with: brew install jq"
+    exit 1
+fi
+
+# Check config file exists
+if [ ! -f "$CONFIG_FILE" ]; then
+    echo "❌ Config file not found: $CONFIG_FILE"
+    exit 1
+fi
 
 # Create ~/.claude directory if it doesn't exist
 mkdir -p "$CLAUDE_DIR"
 
-# Symlink commands directory
-if [ -L "$CLAUDE_DIR/commands" ]; then
-    echo "✓ Commands symlink already exists"
-elif [ -e "$CLAUDE_DIR/commands" ]; then
-    echo "⚠️  $CLAUDE_DIR/commands exists but is not a symlink. Please remove it manually."
-    exit 1
-else
-    ln -sf "$CLAUDE_CONFIG_DIR/commands" "$CLAUDE_DIR/commands"
-    echo "✓ Created commands symlink"
-fi
+# Helper function to expand $HOME in paths
+expand_path() {
+    echo "${1//\$HOME/$HOME}"
+}
 
-# Symlink Slack MCP tokens
-if [ -L "$HOME/.slack-mcp-tokens.json" ]; then
-    echo "✓ Slack MCP tokens symlink already exists"
-elif [ -e "$HOME/.slack-mcp-tokens.json" ]; then
-    echo "⚠️  ~/.slack-mcp-tokens.json exists but is not a symlink. Please remove it manually."
-    exit 1
-else
-    if [ -f "$CLAUDE_CONFIG_DIR/slack-credentials.json" ]; then
-        ln -sf "$CLAUDE_CONFIG_DIR/slack-credentials.json" "$HOME/.slack-mcp-tokens.json"
-        echo "✓ Created Slack MCP tokens symlink"
-    else
-        echo "⚠️  slack-credentials.json not found, skipping Slack credentials symlink"
-    fi
-fi
-
-# Symlink Jira credentials
-if [ -L "$HOME/.jira-mcp-credentials.json" ]; then
-    echo "✓ Jira MCP credentials symlink already exists"
-elif [ -e "$HOME/.jira-mcp-credentials.json" ]; then
-    echo "⚠️  ~/.jira-mcp-credentials.json exists but is not a symlink. Please remove it manually."
-    exit 1
-else
-    if [ -f "$CLAUDE_CONFIG_DIR/jira-credentials.json" ]; then
-        ln -sf "$CLAUDE_CONFIG_DIR/jira-credentials.json" "$HOME/.jira-mcp-credentials.json"
-        echo "✓ Created Jira MCP credentials symlink"
-    else
-        echo "⚠️  jira-credentials.json not found, skipping Jira credentials symlink"
-    fi
-fi
-
-# Symlink Slab credentials
-# if [ -L "$HOME/.slab-mcp-credentials.json" ]; then
-#     echo "✓ Slab MCP credentials symlink already exists"
-# elif [ -e "$HOME/.slab-mcp-credentials.json" ]; then
-#     echo "⚠️  ~/.slab-mcp-credentials.json exists but is not a symlink. Please remove it manually."
-#     exit 1
-# else
-#     if [ -f "$CLAUDE_CONFIG_DIR/slab-credentials.json" ]; then
-#         ln -sf "$CLAUDE_CONFIG_DIR/slab-credentials.json" "$HOME/.slab-mcp-credentials.json"
-#         echo "✓ Created Slab MCP credentials symlink"
-#     else
-#         echo "⚠️  slab-credentials.json not found, skipping Slab credentials symlink"
-#     fi
-# fi
-
-# Install MCP servers via claude mcp add (system-wide with --scope user)
+# ============================================================================
+# SETTINGS
+# ============================================================================
 echo ""
-echo "📦 Installing MCP servers (system-wide)..."
+echo "🔧 Configuring Claude permissions..."
+SETTINGS_FILE="$CLAUDE_DIR/settings.json"
+CONFIG_SETTINGS="$CLAUDE_CONFIG_DIR/settings.json"
 
-# Check if slack-mcp-server is installed
-if ! command -v slack-mcp-server &> /dev/null; then
-    echo "⚠️  slack-mcp-server not found. Install it with: npm install -g @teamsparta/mcp-server-slack"
-else
-    # Add Slack MCP server
-    if claude mcp list 2>/dev/null | grep -q "slack:"; then
-        echo "✓ Slack MCP server already configured"
+if [ -f "$CONFIG_SETTINGS" ]; then
+    if [ -f "$SETTINGS_FILE" ]; then
+        jq -s '.[0] * .[1]' "$SETTINGS_FILE" "$CONFIG_SETTINGS" > "$SETTINGS_FILE.tmp" && mv "$SETTINGS_FILE.tmp" "$SETTINGS_FILE"
+        echo "✓ Merged permissions into existing settings.json"
     else
-        claude mcp add --scope user slack slack-mcp-server -e SLACK_TOKEN_FILE="$HOME/.slack-mcp-tokens.json"
-        echo "✓ Added Slack MCP server"
+        cp "$CONFIG_SETTINGS" "$SETTINGS_FILE"
+        echo "✓ Created settings.json with Claude permissions"
+    fi
+else
+    echo "⚠️  settings.json not found in config directory"
+fi
+
+# ============================================================================
+# CREDENTIAL SYMLINKS
+# ============================================================================
+echo ""
+echo "🔗 Setting up credential symlinks..."
+
+# Slack credentials
+if [ -f "$CLAUDE_CONFIG_DIR/slack-credentials.json" ]; then
+    if [ -L "$HOME/.slack-mcp-tokens.json" ]; then
+        echo "✓ Slack credentials symlink already exists"
+    elif [ -e "$HOME/.slack-mcp-tokens.json" ]; then
+        echo "⚠️  ~/.slack-mcp-tokens.json exists but is not a symlink"
+    else
+        ln -sf "$CLAUDE_CONFIG_DIR/slack-credentials.json" "$HOME/.slack-mcp-tokens.json"
+        echo "✓ Created Slack credentials symlink"
     fi
 fi
 
-# Add Jira MCP server with credentials if available
-if claude mcp list 2>/dev/null | grep -q "jira:"; then
-    echo "✓ Jira MCP server already configured"
-else
-    if [ -f "$HOME/.jira-mcp-credentials.json" ]; then
-        # Read credentials from JSON file
-        JIRA_BASE_URL=$(grep -o '"JIRA_BASE_URL"[[:space:]]*:[[:space:]]*"[^"]*"' "$HOME/.jira-mcp-credentials.json" | sed 's/.*: "\(.*\)"/\1/')
-        JIRA_EMAIL=$(grep -o '"JIRA_EMAIL"[[:space:]]*:[[:space:]]*"[^"]*"' "$HOME/.jira-mcp-credentials.json" | sed 's/.*: "\(.*\)"/\1/')
-        JIRA_API_TOKEN=$(grep -o '"JIRA_API_TOKEN"[[:space:]]*:[[:space:]]*"[^"]*"' "$HOME/.jira-mcp-credentials.json" | sed 's/.*: "\(.*\)"/\1/')
-        
-        # Only add with credentials if they are not placeholder values
-        if [[ "$JIRA_BASE_URL" != "https://your-domain.atlassian.net" && "$JIRA_EMAIL" != "your-email@example.com" && -n "$JIRA_API_TOKEN" ]]; then
-            claude mcp add --scope user jira -e JIRA_BASE_URL="$JIRA_BASE_URL" -e JIRA_EMAIL="$JIRA_EMAIL" -e JIRA_API_TOKEN="$JIRA_API_TOKEN" -- npx -y mcp-jira-stdio
-            echo "✓ Added Jira MCP server with credentials"
+# Jira credentials
+if [ -f "$CLAUDE_CONFIG_DIR/jira-credentials.json" ]; then
+    if [ -L "$HOME/.jira-mcp-credentials.json" ]; then
+        echo "✓ Jira credentials symlink already exists"
+    elif [ -e "$HOME/.jira-mcp-credentials.json" ]; then
+        echo "⚠️  ~/.jira-mcp-credentials.json exists but is not a symlink"
+    else
+        ln -sf "$CLAUDE_CONFIG_DIR/jira-credentials.json" "$HOME/.jira-mcp-credentials.json"
+        echo "✓ Created Jira credentials symlink"
+    fi
+fi
+
+# Iterable credentials
+if [ -f "$CLAUDE_CONFIG_DIR/iterable-credentials.json" ]; then
+    if [ -L "$HOME/.iterable-mcp-credentials.json" ]; then
+        echo "✓ Iterable credentials symlink already exists"
+    elif [ -e "$HOME/.iterable-mcp-credentials.json" ]; then
+        echo "⚠️  ~/.iterable-mcp-credentials.json exists but is not a symlink"
+    else
+        ln -sf "$CLAUDE_CONFIG_DIR/iterable-credentials.json" "$HOME/.iterable-mcp-credentials.json"
+        echo "✓ Created Iterable credentials symlink"
+    fi
+fi
+
+# ============================================================================
+# COMMANDS
+# ============================================================================
+echo ""
+echo "📝 Setting up commands..."
+
+# Global commands - symlink to ~/.claude/commands/
+GLOBAL_COMMANDS_DIR="$CLAUDE_DIR/commands"
+mkdir -p "$GLOBAL_COMMANDS_DIR"
+
+# Remove existing symlinks in global commands dir (to refresh)
+find "$GLOBAL_COMMANDS_DIR" -maxdepth 1 -type l -delete 2>/dev/null || true
+
+# Symlink global commands
+GLOBAL_COMMANDS=$(jq -r '.commands.global // [] | .[]' "$CONFIG_FILE")
+for cmd in $GLOBAL_COMMANDS; do
+    if [ -f "$CLAUDE_CONFIG_DIR/commands/$cmd" ]; then
+        ln -sf "$CLAUDE_CONFIG_DIR/commands/$cmd" "$GLOBAL_COMMANDS_DIR/$cmd"
+        echo "✓ Global command: $cmd"
+    else
+        echo "⚠️  Command not found: $cmd"
+    fi
+done
+
+# Repository-specific commands
+REPO_PATHS=$(jq -r '.commands.repositories // {} | keys[]' "$CONFIG_FILE")
+for repo_path_raw in $REPO_PATHS; do
+    repo_path=$(expand_path "$repo_path_raw")
+
+    if [ ! -d "$repo_path" ]; then
+        echo "⚠️  Repository not found: $repo_path"
+        continue
+    fi
+
+    REPO_COMMANDS_DIR="$repo_path/.claude/commands"
+    mkdir -p "$REPO_COMMANDS_DIR"
+
+    # Remove existing symlinks (to refresh)
+    find "$REPO_COMMANDS_DIR" -maxdepth 1 -type l -delete 2>/dev/null || true
+
+    # Symlink repository-specific commands
+    REPO_COMMANDS=$(jq -r --arg path "$repo_path_raw" '.commands.repositories[$path] // [] | .[]' "$CONFIG_FILE")
+    for cmd in $REPO_COMMANDS; do
+        if [ -f "$CLAUDE_CONFIG_DIR/commands/$cmd" ]; then
+            ln -sf "$CLAUDE_CONFIG_DIR/commands/$cmd" "$REPO_COMMANDS_DIR/$cmd"
+            echo "✓ $(basename "$repo_path"): $cmd"
         else
-            claude mcp add --scope user jira -- npx -y mcp-jira-stdio
-            echo "⚠️  Added Jira MCP server without credentials (update jira-credentials.json and re-run)"
+            echo "⚠️  Command not found: $cmd"
         fi
-    else
-        claude mcp add --scope user jira -- npx -y mcp-jira-stdio
-        echo "✓ Added Jira MCP server (no credentials configured)"
+    done
+
+    # Add .claude to .gitignore if not already there
+    if [ -f "$repo_path/.gitignore" ]; then
+        if ! grep -q "^\.claude/$" "$repo_path/.gitignore" 2>/dev/null; then
+            echo ".claude/" >> "$repo_path/.gitignore"
+        fi
     fi
-fi
+done
 
-# Add Slab MCP server with credentials if available
-# if claude mcp list 2>/dev/null | grep -q "slab:"; then
-#     echo "✓ Slab MCP server already configured"
-# else
-#     if [ -f "$HOME/.slab-mcp-credentials.json" ]; then
-#         # Read credentials from JSON file
-#         SLAB_API_TOKEN=$(grep -o '"SLAB_API_TOKEN"[[:space:]]*:[[:space:]]*"[^"]*"' "$HOME/.slab-mcp-credentials.json" | sed 's/.*: "\(.*\)"/\1/')
-#         
-#         # Only add with credentials if they are not placeholder values
-#         if [[ "$SLAB_API_TOKEN" != "your-slab-api-token-here" && -n "$SLAB_API_TOKEN" ]]; then
-#             claude mcp add --scope user --transport sse slab http://kagent-mcp.stg-itbl.co/slab -H "Authorization: Bearer $SLAB_API_TOKEN"
-#             echo "✓ Added Slab MCP server with credentials"
-#         else
-#             claude mcp add --scope user --transport sse slab http://kagent-mcp.stg-itbl.co/slab
-#             echo "⚠️  Added Slab MCP server without credentials (update slab-credentials.json and re-run)"
-#         fi
-#     else
-#         claude mcp add --scope user --transport sse slab http://kagent-mcp.stg-itbl.co/slab
-#         echo "✓ Added Slab MCP server (no credentials configured)"
-#     fi
-# fi
+# ============================================================================
+# MCP SERVERS
+# ============================================================================
+echo ""
+echo "📦 Setting up MCP servers..."
 
+# Function to add or update MCP in a repository's .mcp.json
+add_mcp_to_repo() {
+    local repo_path="$1"
+    local mcp_name="$2"
+    local mcp_json="$3"
+
+    local mcp_file="$repo_path/.mcp.json"
+
+    if [ -f "$mcp_file" ]; then
+        # Merge with existing
+        jq --arg name "$mcp_name" --argjson mcp "$mcp_json" \
+            '.mcpServers[$name] = $mcp' "$mcp_file" > "$mcp_file.tmp" && mv "$mcp_file.tmp" "$mcp_file"
+    else
+        # Create new
+        echo "{\"mcpServers\": {\"$mcp_name\": $mcp_json}}" | jq '.' > "$mcp_file"
+    fi
+
+    # Add .mcp.json to .gitignore if not already there
+    if [ -f "$repo_path/.gitignore" ]; then
+        if ! grep -q "^\.mcp\.json$" "$repo_path/.gitignore" 2>/dev/null; then
+            echo ".mcp.json" >> "$repo_path/.gitignore"
+        fi
+    fi
+}
+
+# Get list of MCP server names
+MCP_NAMES=$(jq -r '.mcpServers // {} | keys[]' "$CONFIG_FILE")
+
+for mcp_name in $MCP_NAMES; do
+    echo ""
+    echo "  Setting up $mcp_name MCP..."
+
+    # Get MCP config
+    MCP_COMMAND=$(jq -r --arg name "$mcp_name" '.mcpServers[$name].command' "$CONFIG_FILE")
+    MCP_ARGS=$(jq -c --arg name "$mcp_name" '.mcpServers[$name].args // []' "$CONFIG_FILE")
+    MCP_ENV_FILE_RAW=$(jq -r --arg name "$mcp_name" '.mcpServers[$name].envFile // ""' "$CONFIG_FILE")
+    MCP_REPOS=$(jq -r --arg name "$mcp_name" '.mcpServers[$name].repositories // [] | .[]' "$CONFIG_FILE")
+
+    # Build environment object
+    ENV_OBJ="{}"
+
+    # If envFile is specified, read env vars from that file
+    if [ -n "$MCP_ENV_FILE_RAW" ] && [ "$MCP_ENV_FILE_RAW" != "null" ]; then
+        ENV_FILE_PATH=$(expand_path "$MCP_ENV_FILE_RAW")
+        if [ -f "$ENV_FILE_PATH" ]; then
+            ENV_OBJ=$(cat "$ENV_FILE_PATH")
+        fi
+    fi
+
+    # Merge inline env vars from config
+    INLINE_ENV=$(jq -c --arg name "$mcp_name" '.mcpServers[$name].env // {}' "$CONFIG_FILE")
+    # Expand $HOME in inline env values
+    INLINE_ENV_EXPANDED=$(echo "$INLINE_ENV" | sed "s|\\\$HOME|$HOME|g")
+    ENV_OBJ=$(echo "$ENV_OBJ" "$INLINE_ENV_EXPANDED" | jq -s 'add')
+
+    # Build the MCP server JSON
+    MCP_JSON=$(jq -n \
+        --arg type "stdio" \
+        --arg command "$MCP_COMMAND" \
+        --argjson args "$MCP_ARGS" \
+        --argjson env "$ENV_OBJ" \
+        '{type: $type, command: $command, args: $args, env: $env}')
+
+    # Install MCP in each repository
+    for repo_path_raw in $MCP_REPOS; do
+        repo_path=$(expand_path "$repo_path_raw")
+
+        if [ ! -d "$repo_path" ]; then
+            echo "    ⚠️  Repository not found: $repo_path"
+            continue
+        fi
+
+        add_mcp_to_repo "$repo_path" "$mcp_name" "$MCP_JSON"
+        echo "    ✓ Added $mcp_name to $(basename "$repo_path")"
+    done
+done
+
+# ============================================================================
+# SUMMARY
+# ============================================================================
 echo ""
 echo "✅ Bootstrap complete!"
 echo ""
-echo "Symlinks created:"
-echo "  ~/.claude/commands -> ~/.claude-config/commands"
-echo "  ~/.slack-mcp-tokens.json -> ~/.claude-config/slack-credentials.json"
-if [ -L "$HOME/.jira-mcp-credentials.json" ]; then
-    echo "  ~/.jira-mcp-credentials.json -> ~/.claude-config/jira-credentials.json"
-fi
-# if [ -L "$HOME/.slab-mcp-credentials.json" ]; then
-#     echo "  ~/.slab-mcp-credentials.json -> ~/.claude-config/slab-credentials.json"
-# fi
-echo ""
-echo "MCP servers installed (system-wide):"
-claude mcp list
+echo "Configuration loaded from: $CONFIG_FILE"
