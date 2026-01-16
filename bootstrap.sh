@@ -148,8 +148,8 @@ for repo_path_raw in $REPO_PATHS; do
     repo_path=$(expand_path "$repo_path_raw")
 
     if [ ! -d "$repo_path" ]; then
-        echo "❌ No such project: $repo_path"
-        exit 1
+        echo "⚠️  Skipping missing project: $repo_path"
+        continue
     fi
 
     REPO_COMMANDS_DIR="$repo_path/.claude/commands"
@@ -280,8 +280,8 @@ for mcp_name in $MCP_NAMES; do
         repo_path=$(expand_path "$repo_path_raw")
 
         if [ ! -d "$repo_path" ]; then
-            echo "❌ No such project: $repo_path"
-            exit 1
+            echo "    ⚠️  Skipping missing project: $repo_path"
+            continue
         fi
 
         add_mcp_to_repo "$repo_path" "$mcp_name" "$MCP_JSON"

@@ -25,6 +25,9 @@ git clone https://github.com/YOUR_USERNAME/claude-config.git ~/claude-config
 # Or if you haven't forked:
 git clone https://github.com/sumchattering/claude-config.git ~/claude-config
 
+# Edit bootstrap-config.json with your own projects and preferences
+# (Update repository paths to match your local setup)
+
 # Copy example credentials and configure them
 cp ~/claude-config/*-credentials.json.example ~/claude-config/*-credentials.json
 # Edit the credential files with your actual tokens
