@@ -37,10 +37,10 @@
       ""
     ],
     "separatorInvertBackground": [
-      false
+      true
     ],
-    "startCaps": [],
-    "endCaps": [],
-    "autoAlign": false
+    "startCaps": [""],
+    "endCaps": [""],
+    "autoAlign": true
   }
 }
