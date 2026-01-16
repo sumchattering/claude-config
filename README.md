@@ -124,7 +124,11 @@ The `settings.json` file contains Claude Code permissions and settings that get 
 
 ### Status Line
 
-This config includes [ccstatusline](https://github.com/sirmalloc/ccstatusline), a customizable Powerline-style status line for Claude Code that displays:
+This config includes [ccstatusline](https://github.com/sirmalloc/ccstatusline), a customizable Powerline-style status line for Claude Code.
+
+![Status Line Screenshot](screenshots/statusline.png)
+
+It displays:
 
 - **Model name** - Current Claude model in use
 - **Context length** - Token usage indicator
