@@ -31,9 +31,7 @@ mkdir -p "$CLAUDE_DIR"
 echo ""
 echo "📊 Setting up ccstatusline..."
 if command -v ccstatusline &> /dev/null; then
-    echo "  Updating ccstatusline to latest..."
-    npm update -g ccstatusline
-    echo "  ✓ ccstatusline updated"
+    echo "  ✓ ccstatusline already installed"
 else
     echo "  Installing ccstatusline..."
     npm install -g ccstatusline
