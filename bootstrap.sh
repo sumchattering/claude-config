@@ -38,12 +38,12 @@ else
     echo "  ✓ ccstatusline installed"
 fi
 
-# Copy ccstatusline config
+# Symlink ccstatusline config
 CCSTATUSLINE_CONFIG_DIR="$HOME/.config/ccstatusline"
 mkdir -p "$CCSTATUSLINE_CONFIG_DIR"
 rm -f "$CCSTATUSLINE_CONFIG_DIR/settings.json"
-cp "$CLAUDE_CONFIG_DIR/ccstatusline-settings.json" "$CCSTATUSLINE_CONFIG_DIR/settings.json"
-echo "  ✓ ccstatusline config copied"
+ln -sf "$CLAUDE_CONFIG_DIR/ccstatusline-settings.json" "$CCSTATUSLINE_CONFIG_DIR/settings.json"
+echo "  ✓ ccstatusline config symlinked"
 
 # Helper function to expand $HOME in paths
 expand_path() {
