@@ -25,6 +25,21 @@ fi
 # Create ~/.claude directory if it doesn't exist
 mkdir -p "$CLAUDE_DIR"
 
+# ============================================================================
+# CCSTATUSLINE
+# ============================================================================
+echo ""
+echo "📊 Setting up ccstatusline..."
+if command -v ccstatusline &> /dev/null; then
+    echo "  Updating ccstatusline to latest..."
+    npm update -g ccstatusline
+    echo "  ✓ ccstatusline updated"
+else
+    echo "  Installing ccstatusline..."
+    npm install -g ccstatusline
+    echo "  ✓ ccstatusline installed"
+fi
+
 # Helper function to expand $HOME in paths
 expand_path() {
     echo "${1//\$HOME/$HOME}"
