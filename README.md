@@ -20,8 +20,10 @@ Just like traditional dotfiles let you sync your shell configuration across mach
 ## Quick Start
 
 ```bash
-# Clone to ~/claude-config
+# Clone to ~/claude-config (use your fork, or the original if you haven't forked)
 git clone https://github.com/YOUR_USERNAME/claude-config.git ~/claude-config
+# Or if you haven't forked:
+git clone https://github.com/sumchattering/claude-config.git ~/claude-config
 
 # Copy example credentials and configure them
 cp ~/claude-config/*-credentials.json.example ~/claude-config/*-credentials.json
@@ -180,8 +182,10 @@ cp jira-credentials.json.example jira-credentials.json
 Since this is a git repository, sync your configuration across machines:
 
 ```bash
-# On a new machine
+# On a new machine (use your fork, or the original if you haven't forked)
 git clone https://github.com/YOUR_USERNAME/claude-config.git ~/claude-config
+# Or if you haven't forked:
+git clone https://github.com/sumchattering/claude-config.git ~/claude-config
 
 # Set up credentials (these aren't synced)
 cp ~/claude-config/*-credentials.json.example ~/claude-config/*-credentials.json
