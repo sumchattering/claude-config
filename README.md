@@ -38,6 +38,7 @@ cp ~/claude-config/*-credentials.json.example ~/claude-config/*-credentials.json
 ├── bootstrap.sh                  # Setup script - run this to apply your config
 ├── bootstrap-config.json         # Define which commands/MCPs go where
 ├── settings.json                 # Claude Code permissions and settings
+├── ccstatusline-settings.json    # Status line widget configuration
 ├── commands/                     # Your slash commands (markdown files)
 │   ├── review-uncommitted.md     # Example: code review command
 │   └── your-command.md           # Add your own!
@@ -121,15 +122,40 @@ MCP servers are configured in the `mcpServers` section:
 
 The `settings.json` file contains Claude Code permissions and settings that get merged into your global `~/.claude/settings.json`.
 
+### Status Line
+
+This config includes [ccstatusline](https://github.com/sirmalloc/ccstatusline), a customizable Powerline-style status line for Claude Code that displays:
+
+- **Model name** - Current Claude model in use
+- **Context length** - Token usage indicator
+- **Working directory** - Current directory path
+- **Git branch** - Active branch name
+
+The bootstrap script:
+1. Installs `ccstatusline` globally via npm (if not already installed)
+2. Symlinks the config from `ccstatusline-settings.json` to `~/.config/ccstatusline/settings.json`
+
+**Customizing the status line:**
+
+Edit `ccstatusline-settings.json` directly (changes apply automatically via symlink), or run the interactive TUI:
+
+```bash
+ccstatusline
+```
+
+**Requirements:** A terminal with a [Powerline-compatible font](https://github.com/powerline/fonts) for proper arrow rendering.
+
 ## How Bootstrap Works
 
 When you run `~/claude-config/bootstrap.sh`, it:
 
-1. **Merges settings** - Combines your `settings.json` with the global Claude settings
-2. **Creates credential symlinks** - Links credential files to expected locations
-3. **Symlinks commands** - Links commands to `~/.claude/commands/` (global) or `repo/.claude/commands/` (per-repo)
-4. **Configures MCP servers** - Creates/updates `.mcp.json` in each repository
-5. **Updates .gitignore** - Adds `.claude/` and `.mcp.json` to repositories' gitignores
+1. **Installs ccstatusline** - Installs the status line tool globally via npm (if not present)
+2. **Symlinks status line config** - Links `ccstatusline-settings.json` to `~/.config/ccstatusline/settings.json`
+3. **Merges settings** - Combines your `settings.json` with the global Claude settings
+4. **Creates credential symlinks** - Links credential files to expected locations
+5. **Symlinks commands** - Links commands to `~/.claude/commands/` (global) or `repo/.claude/commands/` (per-repo)
+6. **Configures MCP servers** - Creates/updates `.mcp.json` in each repository
+7. **Updates .gitignore** - Adds `.claude/` and `.mcp.json` to repositories' gitignores
 
 ## Credentials
 
