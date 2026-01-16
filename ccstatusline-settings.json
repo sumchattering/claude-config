@@ -39,8 +39,13 @@
     "separatorInvertBackground": [
       true
     ],
-    "startCaps": [""],
-    "endCaps": [""],
-    "autoAlign": true
+    "startCaps": [
+      ""
+    ],
+    "endCaps": [
+      ""
+    ],
+    "autoAlign": true,
+    "theme": "nord-aurora"
   }
 }
