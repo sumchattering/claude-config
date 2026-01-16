@@ -1,6 +1,6 @@
 ---
 description: Review all uncommitted changes (including submodules), optionally commit with --commit
-argument-hint: [--commit] [context-hint]
+argument-hint: "[--commit] [context-hint]"
 allowed-tools: [Bash, Read, Write, Edit, Grep, Glob, Task]
 ---
 

@@ -60,6 +60,7 @@ This is the heart of the configuration. It defines:
     "slack": {
       "command": "slack-mcp-server",
       "args": [],
+      "install": "npm install -g @anthropic-ai/slack-mcp-server",
       "env": {
         "SLACK_TOKEN_FILE": "$HOME/.slack-mcp-tokens.json"
       },
@@ -109,9 +110,12 @@ MCP servers are configured in the `mcpServers` section:
 
 - `command`: The executable to run
 - `args`: Command line arguments
+- `install`: Install command if package is missing (bootstrap will prompt before running)
 - `env`: Environment variables (supports `$HOME` expansion)
 - `envFile`: Path to a JSON file containing environment variables
 - `repositories`: Which repositories should have this MCP server
+
+**Note:** For `npx` commands, installation is handled automatically on first run. The `install` field is only needed for direct commands like `slack-mcp-server`.
 
 ### Settings
 

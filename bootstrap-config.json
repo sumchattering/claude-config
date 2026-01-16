@@ -3,6 +3,7 @@
     "slack": {
       "command": "slack-mcp-server",
       "args": [],
+      "install": "npm install -g @anthropic-ai/slack-mcp-server",
       "env": {
         "SLACK_TOKEN_FILE": "$HOME/.slack-mcp-tokens.json"
       },

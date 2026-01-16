@@ -191,6 +191,35 @@ for mcp_name in $MCP_NAMES; do
 
     # Get MCP config
     MCP_COMMAND=$(jq -r --arg name "$mcp_name" '.mcpServers[$name].command' "$CONFIG_FILE")
+    MCP_INSTALL=$(jq -r --arg name "$mcp_name" '.mcpServers[$name].install // ""' "$CONFIG_FILE")
+
+    # Check if package is installed (skip for npx commands since they auto-install)
+    if [ "$MCP_COMMAND" != "npx" ]; then
+        if command -v "$MCP_COMMAND" &> /dev/null; then
+            echo "    ✓ $MCP_COMMAND already installed"
+        else
+            echo "    ⚠️  $MCP_COMMAND not found"
+            if [ -n "$MCP_INSTALL" ] && [ "$MCP_INSTALL" != "null" ]; then
+                read -p "    Install with '$MCP_INSTALL'? [y/N] " -n 1 -r
+                echo
+                if [[ $REPLY =~ ^[Yy]$ ]]; then
+                    echo "    Installing $mcp_name..."
+                    eval "$MCP_INSTALL"
+                    if command -v "$MCP_COMMAND" &> /dev/null; then
+                        echo "    ✓ $MCP_COMMAND installed successfully"
+                    else
+                        echo "    ❌ Installation failed. Please install manually: $MCP_INSTALL"
+                    fi
+                else
+                    echo "    Skipped. Install manually with: $MCP_INSTALL"
+                fi
+            else
+                echo "    No install command configured. Add 'install' field to config."
+            fi
+        fi
+    else
+        echo "    ✓ Uses npx (auto-installs on first run)"
+    fi
     MCP_ARGS=$(jq -c --arg name "$mcp_name" '.mcpServers[$name].args // []' "$CONFIG_FILE")
     MCP_ENV_FILE_RAW=$(jq -r --arg name "$mcp_name" '.mcpServers[$name].envFile // ""' "$CONFIG_FILE")
     MCP_REPOS=$(jq -r --arg name "$mcp_name" '.mcpServers[$name].repositories // [] | .[]' "$CONFIG_FILE")
