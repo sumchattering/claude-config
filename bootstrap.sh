@@ -66,6 +66,8 @@ if [ -f "$CLAUDE_CONFIG_DIR/slack-credentials.json" ]; then
         ln -sf "$CLAUDE_CONFIG_DIR/slack-credentials.json" "$HOME/.slack-mcp-tokens.json"
         echo "✓ Created Slack credentials symlink"
     fi
+else
+    echo "- Slack credentials not found, skipping"
 fi
 
 # Jira credentials
@@ -78,6 +80,8 @@ if [ -f "$CLAUDE_CONFIG_DIR/jira-credentials.json" ]; then
         ln -sf "$CLAUDE_CONFIG_DIR/jira-credentials.json" "$HOME/.jira-mcp-credentials.json"
         echo "✓ Created Jira credentials symlink"
     fi
+else
+    echo "- Jira credentials not found, skipping"
 fi
 
 # Iterable credentials
@@ -90,6 +94,8 @@ if [ -f "$CLAUDE_CONFIG_DIR/iterable-credentials.json" ]; then
         ln -sf "$CLAUDE_CONFIG_DIR/iterable-credentials.json" "$HOME/.iterable-mcp-credentials.json"
         echo "✓ Created Iterable credentials symlink"
     fi
+else
+    echo "- Iterable credentials not found, skipping"
 fi
 
 # ============================================================================
@@ -122,8 +128,8 @@ for repo_path_raw in $REPO_PATHS; do
     repo_path=$(expand_path "$repo_path_raw")
 
     if [ ! -d "$repo_path" ]; then
-        echo "⚠️  Repository not found: $repo_path"
-        continue
+        echo "❌ No such project: $repo_path"
+        exit 1
     fi
 
     REPO_COMMANDS_DIR="$repo_path/.claude/commands"
@@ -254,8 +260,8 @@ for mcp_name in $MCP_NAMES; do
         repo_path=$(expand_path "$repo_path_raw")
 
         if [ ! -d "$repo_path" ]; then
-            echo "    ⚠️  Repository not found: $repo_path"
-            continue
+            echo "❌ No such project: $repo_path"
+            exit 1
         fi
 
         add_mcp_to_repo "$repo_path" "$mcp_name" "$MCP_JSON"
