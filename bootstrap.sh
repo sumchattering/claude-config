@@ -4,7 +4,8 @@
 
 set -e
 
-CLAUDE_CONFIG_DIR="$HOME/claude-config"
+# Dynamically determine the directory where this script is located
+CLAUDE_CONFIG_DIR="$(cd "$(dirname "$0")" && pwd)"
 CLAUDE_DIR="$HOME/.claude"
 CONFIG_FILE="$CLAUDE_CONFIG_DIR/bootstrap-config.json"
 
