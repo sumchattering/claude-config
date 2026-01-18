@@ -1,5 +1,14 @@
 {
   "mcpServers": {
+    "iterm2": {
+      "command": "npx",
+      "args": ["github:sumchattering/iterm2-mcp-server"],
+      "repositories": [
+        "$HOME/MyProjects/iterable-swift-sdk",
+        "$HOME/MyProjects/iterable-android-sdk",
+        "$HOME/MyProjects/react-native-sdk"
+      ]
+    },
     "slack": {
       "command": "slack-mcp-server",
       "args": [],
