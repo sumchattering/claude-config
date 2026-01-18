@@ -63,6 +63,11 @@ This is the heart of the configuration. It defines:
 ```json
 {
   "mcpServers": {
+    "iterm2": {
+      "command": "npx",
+      "args": ["github:sumchattering/iterm2-mcp-server"],
+      "global": true
+    },
     "slack": {
       "command": "slack-mcp-server",
       "args": [],
@@ -119,7 +124,8 @@ MCP servers are configured in the `mcpServers` section:
 - `install`: Install command if package is missing (bootstrap will prompt before running)
 - `env`: Environment variables (supports `$HOME` expansion)
 - `envFile`: Path to a JSON file containing environment variables
-- `repositories`: Which repositories should have this MCP server
+- `global`: If `true`, installs to `~/.claude/settings.json` (available in all projects)
+- `repositories`: Which repositories should have this MCP server (for non-global servers)
 
 **Note:** For `npx` commands, installation is handled automatically on first run. The `install` field is only needed for direct commands like `slack-mcp-server`.
 

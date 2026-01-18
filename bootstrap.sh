@@ -184,6 +184,28 @@ done
 echo ""
 echo "📦 Setting up MCP servers..."
 
+# Function to add or update MCP in global settings.json
+add_mcp_to_global() {
+    local mcp_name="$1"
+    local mcp_json="$2"
+
+    if [ -f "$SETTINGS_FILE" ]; then
+        # Check if mcpServers key exists, if not create it
+        if jq -e '.mcpServers' "$SETTINGS_FILE" > /dev/null 2>&1; then
+            # Merge with existing mcpServers
+            jq --arg name "$mcp_name" --argjson mcp "$mcp_json" \
+                '.mcpServers[$name] = $mcp' "$SETTINGS_FILE" > "$SETTINGS_FILE.tmp" && mv "$SETTINGS_FILE.tmp" "$SETTINGS_FILE"
+        else
+            # Add mcpServers key
+            jq --arg name "$mcp_name" --argjson mcp "$mcp_json" \
+                '. + {mcpServers: {($name): $mcp}}' "$SETTINGS_FILE" > "$SETTINGS_FILE.tmp" && mv "$SETTINGS_FILE.tmp" "$SETTINGS_FILE"
+        fi
+    else
+        # Create new settings file with mcpServers
+        echo "{\"mcpServers\": {\"$mcp_name\": $mcp_json}}" | jq '.' > "$SETTINGS_FILE"
+    fi
+}
+
 # Function to add or update MCP in a repository's .mcp.json
 add_mcp_to_repo() {
     local repo_path="$1"
@@ -249,6 +271,7 @@ for mcp_name in $MCP_NAMES; do
     fi
     MCP_ARGS=$(jq -c --arg name "$mcp_name" '.mcpServers[$name].args // []' "$CONFIG_FILE")
     MCP_ENV_FILE_RAW=$(jq -r --arg name "$mcp_name" '.mcpServers[$name].envFile // ""' "$CONFIG_FILE")
+    MCP_GLOBAL=$(jq -r --arg name "$mcp_name" '.mcpServers[$name].global // false' "$CONFIG_FILE")
     MCP_REPOS=$(jq -r --arg name "$mcp_name" '.mcpServers[$name].repositories // [] | .[]' "$CONFIG_FILE")
 
     # Build environment object
@@ -275,6 +298,12 @@ for mcp_name in $MCP_NAMES; do
         --argjson args "$MCP_ARGS" \
         --argjson env "$ENV_OBJ" \
         '{type: $type, command: $command, args: $args, env: $env}')
+
+    # If global, add to ~/.claude/settings.json
+    if [ "$MCP_GLOBAL" = "true" ]; then
+        add_mcp_to_global "$mcp_name" "$MCP_JSON"
+        echo "    ✓ Added $mcp_name globally to ~/.claude/settings.json"
+    fi
 
     # Install MCP in each repository
     for repo_path_raw in $MCP_REPOS; do

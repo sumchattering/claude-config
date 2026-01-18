@@ -3,11 +3,7 @@
     "iterm2": {
       "command": "npx",
       "args": ["github:sumchattering/iterm2-mcp-server"],
-      "repositories": [
-        "$HOME/MyProjects/iterable-swift-sdk",
-        "$HOME/MyProjects/iterable-android-sdk",
-        "$HOME/MyProjects/react-native-sdk"
-      ]
+      "global": true
     },
     "slack": {
       "command": "slack-mcp-server",
