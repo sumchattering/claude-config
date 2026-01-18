@@ -8,14 +8,16 @@
         "color": "cyan"
       },
       {
+        "id": "5",
+        "type": "current-working-dir",
+        "color": "magenta",
+        "depth": 2,
+        "showLabel": false
+      },
+      {
         "id": "3",
         "type": "context-length",
         "color": "brightBlack"
-      },
-      {
-        "id": "5",
-        "type": "current-working-dir",
-        "color": "magenta"
       },
       {
         "id": "7",
