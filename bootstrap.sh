@@ -184,25 +184,26 @@ done
 echo ""
 echo "📦 Setting up MCP servers..."
 
-# Function to add or update MCP in global settings.json
+# Function to add or update MCP in global ~/.claude.json (user scope)
 add_mcp_to_global() {
     local mcp_name="$1"
     local mcp_json="$2"
+    local claude_json="$HOME/.claude.json"
 
-    if [ -f "$SETTINGS_FILE" ]; then
+    if [ -f "$claude_json" ]; then
         # Check if mcpServers key exists, if not create it
-        if jq -e '.mcpServers' "$SETTINGS_FILE" > /dev/null 2>&1; then
+        if jq -e '.mcpServers' "$claude_json" > /dev/null 2>&1; then
             # Merge with existing mcpServers
             jq --arg name "$mcp_name" --argjson mcp "$mcp_json" \
-                '.mcpServers[$name] = $mcp' "$SETTINGS_FILE" > "$SETTINGS_FILE.tmp" && mv "$SETTINGS_FILE.tmp" "$SETTINGS_FILE"
+                '.mcpServers[$name] = $mcp' "$claude_json" > "$claude_json.tmp" && mv "$claude_json.tmp" "$claude_json"
         else
             # Add mcpServers key
             jq --arg name "$mcp_name" --argjson mcp "$mcp_json" \
-                '. + {mcpServers: {($name): $mcp}}' "$SETTINGS_FILE" > "$SETTINGS_FILE.tmp" && mv "$SETTINGS_FILE.tmp" "$SETTINGS_FILE"
+                '. + {mcpServers: {($name): $mcp}}' "$claude_json" > "$claude_json.tmp" && mv "$claude_json.tmp" "$claude_json"
         fi
     else
-        # Create new settings file with mcpServers
-        echo "{\"mcpServers\": {\"$mcp_name\": $mcp_json}}" | jq '.' > "$SETTINGS_FILE"
+        # Create new file with mcpServers
+        echo "{\"mcpServers\": {\"$mcp_name\": $mcp_json}}" | jq '.' > "$claude_json"
     fi
 }
 
@@ -299,10 +300,10 @@ for mcp_name in $MCP_NAMES; do
         --argjson env "$ENV_OBJ" \
         '{type: $type, command: $command, args: $args, env: $env}')
 
-    # If global, add to ~/.claude/settings.json
+    # If global, add to ~/.claude.json (user scope)
     if [ "$MCP_GLOBAL" = "true" ]; then
         add_mcp_to_global "$mcp_name" "$MCP_JSON"
-        echo "    ✓ Added $mcp_name globally to ~/.claude/settings.json"
+        echo "    ✓ Added $mcp_name globally to ~/.claude.json"
     fi
 
     # Install MCP in each repository

@@ -124,7 +124,7 @@ MCP servers are configured in the `mcpServers` section:
 - `install`: Install command if package is missing (bootstrap will prompt before running)
 - `env`: Environment variables (supports `$HOME` expansion)
 - `envFile`: Path to a JSON file containing environment variables
-- `global`: If `true`, installs to `~/.claude/settings.json` (available in all projects)
+- `global`: If `true`, installs to `~/.claude.json` (available in all projects)
 - `repositories`: Which repositories should have this MCP server (for non-global servers)
 
 **Note:** For `npx` commands, installation is handled automatically on first run. The `install` field is only needed for direct commands like `slack-mcp-server`.
