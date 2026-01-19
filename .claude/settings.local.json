@@ -3,5 +3,18 @@
     "allow": [
       "Bash(claude config:*)"
     ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 .claude/hooks/dangerous-command-blocker.py 2>&1"
+          }
+        ]
+      }
+    ]
   }
 }

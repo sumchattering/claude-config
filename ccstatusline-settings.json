@@ -9,41 +9,48 @@
       },
       {
         "id": "5",
-        "type": "current-working-dir",
-        "color": "magenta",
-        "depth": 2,
-        "showLabel": false
-      },
-      {
-        "id": "3",
         "type": "context-length",
-        "color": "brightBlack"
+        "color": "magenta"
       },
       {
-        "id": "7",
-        "type": "git-branch",
-        "color": "yellow"
+        "id": "daa1b800-d3f0-4173-97df-d77d3e6bad11",
+        "type": "context-percentage",
+        "backgroundColor": "bgBrightWhite"
       }
     ],
-    []
+    [
+      {
+        "id": "11e151ce-9aeb-4739-a7c1-ed7b6d980a97",
+        "type": "current-working-dir",
+        "backgroundColor": "bgGreen",
+        "maxDepth": 2
+      }
+    ],
+    [
+      {
+        "id": "0d4cc200-c876-467f-8849-7cd0d1716fe6",
+        "type": "git-branch",
+        "backgroundColor": "bgBlue"
+      }
+    ]
   ],
   "flexMode": "full-minus-40",
   "compactThreshold": 60,
   "colorLevel": 2,
+  "defaultPadding": " ",
   "inheritSeparatorColors": false,
   "globalBold": false,
   "powerline": {
     "enabled": true,
     "separators": [
-      ""
+      ""
     ],
     "separatorInvertBackground": [
       false
     ],
     "startCaps": [],
     "endCaps": [],
-    "autoAlign": false,
-    "theme": "nord-aurora"
-  },
-  "defaultPadding": " "
+    "theme": "nord-aurora",
+    "autoAlign": false
+  }
 }

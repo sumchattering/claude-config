@@ -41,6 +41,15 @@
         "$HOME/MyProjects/iterable-android-sdk",
         "$HOME/MyProjects/react-native-sdk"
       ]
+    },
+    "sentry": {
+      "type": "http",
+      "url": "https://mcp.sentry.dev/mcp",
+      "repositories": [
+        "$HOME/MyProjects/test-app/test-mobile",
+        "$HOME/MyProjects/test-app/test-backend",
+        "$HOME/MyProjects/test-app"
+      ]
     }
   },
   "commands": {

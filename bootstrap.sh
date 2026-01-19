@@ -72,6 +72,23 @@ else
 fi
 
 # ============================================================================
+# HOOKS
+# ============================================================================
+echo ""
+echo "🪝 Setting up hooks..."
+HOOKS_DIR="$CLAUDE_CONFIG_DIR/hooks"
+
+if [ -d "$HOOKS_DIR" ]; then
+    # Copy hooks to global ~/.claude/hooks/
+    GLOBAL_HOOKS_DIR="$CLAUDE_DIR/hooks"
+    mkdir -p "$GLOBAL_HOOKS_DIR"
+    cp -r "$HOOKS_DIR"/* "$GLOBAL_HOOKS_DIR/" 2>/dev/null || true
+    echo "✓ Hooks copied to ~/.claude/hooks/"
+else
+    echo "- No hooks directory found, skipping"
+fi
+
+# ============================================================================
 # CREDENTIAL SYMLINKS
 # ============================================================================
 echo ""
@@ -239,66 +256,81 @@ for mcp_name in $MCP_NAMES; do
     echo ""
     echo "  Setting up $mcp_name MCP..."
 
-    # Get MCP config
-    MCP_COMMAND=$(jq -r --arg name "$mcp_name" '.mcpServers[$name].command' "$CONFIG_FILE")
-    MCP_INSTALL=$(jq -r --arg name "$mcp_name" '.mcpServers[$name].install // ""' "$CONFIG_FILE")
-
-    # Check if package is installed (skip for npx commands since they auto-install)
-    if [ "$MCP_COMMAND" != "npx" ]; then
-        if command -v "$MCP_COMMAND" &> /dev/null; then
-            echo "    ✓ $MCP_COMMAND already installed"
-        else
-            echo "    ⚠️  $MCP_COMMAND not found"
-            if [ -n "$MCP_INSTALL" ] && [ "$MCP_INSTALL" != "null" ]; then
-                read -p "    Install with '$MCP_INSTALL'? [y/N] " -n 1 -r
-                echo
-                if [[ $REPLY =~ ^[Yy]$ ]]; then
-                    echo "    Installing $mcp_name..."
-                    eval "$MCP_INSTALL"
-                    if command -v "$MCP_COMMAND" &> /dev/null; then
-                        echo "    ✓ $MCP_COMMAND installed successfully"
-                    else
-                        echo "    ❌ Installation failed. Please install manually: $MCP_INSTALL"
-                    fi
-                else
-                    echo "    Skipped. Install manually with: $MCP_INSTALL"
-                fi
-            else
-                echo "    No install command configured. Add 'install' field to config."
-            fi
-        fi
-    else
-        echo "    ✓ Uses npx (auto-installs on first run)"
-    fi
-    MCP_ARGS=$(jq -c --arg name "$mcp_name" '.mcpServers[$name].args // []' "$CONFIG_FILE")
-    MCP_ENV_FILE_RAW=$(jq -r --arg name "$mcp_name" '.mcpServers[$name].envFile // ""' "$CONFIG_FILE")
+    # Get MCP config - check type first
+    MCP_TYPE=$(jq -r --arg name "$mcp_name" '.mcpServers[$name].type // "stdio"' "$CONFIG_FILE")
     MCP_GLOBAL=$(jq -r --arg name "$mcp_name" '.mcpServers[$name].global // false' "$CONFIG_FILE")
     MCP_REPOS=$(jq -r --arg name "$mcp_name" '.mcpServers[$name].repositories // [] | .[]' "$CONFIG_FILE")
 
-    # Build environment object
-    ENV_OBJ="{}"
+    # Handle http-type MCP servers differently
+    if [ "$MCP_TYPE" = "http" ]; then
+        MCP_URL=$(jq -r --arg name "$mcp_name" '.mcpServers[$name].url' "$CONFIG_FILE")
+        echo "    ✓ HTTP MCP server: $MCP_URL"
 
-    # If envFile is specified, read env vars from that file
-    if [ -n "$MCP_ENV_FILE_RAW" ] && [ "$MCP_ENV_FILE_RAW" != "null" ]; then
-        ENV_FILE_PATH=$(expand_path "$MCP_ENV_FILE_RAW")
-        if [ -f "$ENV_FILE_PATH" ]; then
-            ENV_OBJ=$(cat "$ENV_FILE_PATH")
+        # Build the MCP server JSON for http type
+        MCP_JSON=$(jq -n \
+            --arg type "http" \
+            --arg url "$MCP_URL" \
+            '{type: $type, url: $url}')
+    else
+        # stdio type - original logic
+        MCP_COMMAND=$(jq -r --arg name "$mcp_name" '.mcpServers[$name].command' "$CONFIG_FILE")
+        MCP_INSTALL=$(jq -r --arg name "$mcp_name" '.mcpServers[$name].install // ""' "$CONFIG_FILE")
+
+        # Check if package is installed (skip for npx commands since they auto-install)
+        if [ "$MCP_COMMAND" != "npx" ]; then
+            if command -v "$MCP_COMMAND" &> /dev/null; then
+                echo "    ✓ $MCP_COMMAND already installed"
+            else
+                echo "    ⚠️  $MCP_COMMAND not found"
+                if [ -n "$MCP_INSTALL" ] && [ "$MCP_INSTALL" != "null" ]; then
+                    read -p "    Install with '$MCP_INSTALL'? [y/N] " -n 1 -r
+                    echo
+                    if [[ $REPLY =~ ^[Yy]$ ]]; then
+                        echo "    Installing $mcp_name..."
+                        eval "$MCP_INSTALL"
+                        if command -v "$MCP_COMMAND" &> /dev/null; then
+                            echo "    ✓ $MCP_COMMAND installed successfully"
+                        else
+                            echo "    ❌ Installation failed. Please install manually: $MCP_INSTALL"
+                        fi
+                    else
+                        echo "    Skipped. Install manually with: $MCP_INSTALL"
+                    fi
+                else
+                    echo "    No install command configured. Add 'install' field to config."
+                fi
+            fi
+        else
+            echo "    ✓ Uses npx (auto-installs on first run)"
         fi
+        MCP_ARGS=$(jq -c --arg name "$mcp_name" '.mcpServers[$name].args // []' "$CONFIG_FILE")
+        MCP_ENV_FILE_RAW=$(jq -r --arg name "$mcp_name" '.mcpServers[$name].envFile // ""' "$CONFIG_FILE")
+
+        # Build environment object
+        ENV_OBJ="{}"
+
+        # If envFile is specified, read env vars from that file
+        if [ -n "$MCP_ENV_FILE_RAW" ] && [ "$MCP_ENV_FILE_RAW" != "null" ]; then
+            ENV_FILE_PATH=$(expand_path "$MCP_ENV_FILE_RAW")
+            if [ -f "$ENV_FILE_PATH" ]; then
+                ENV_OBJ=$(cat "$ENV_FILE_PATH")
+            fi
+        fi
+
+        # Merge inline env vars from config
+        INLINE_ENV=$(jq -c --arg name "$mcp_name" '.mcpServers[$name].env // {}' "$CONFIG_FILE")
+        # Expand $HOME in inline env values
+        INLINE_ENV_EXPANDED=$(echo "$INLINE_ENV" | sed "s|\\\$HOME|$HOME|g")
+        ENV_OBJ=$(echo "$ENV_OBJ" "$INLINE_ENV_EXPANDED" | jq -s 'add')
+
+        # Build the MCP server JSON for stdio type
+        MCP_JSON=$(jq -n \
+            --arg type "stdio" \
+            --arg command "$MCP_COMMAND" \
+            --argjson args "$MCP_ARGS" \
+            --argjson env "$ENV_OBJ" \
+            '{type: $type, command: $command, args: $args, env: $env}')
     fi
-
-    # Merge inline env vars from config
-    INLINE_ENV=$(jq -c --arg name "$mcp_name" '.mcpServers[$name].env // {}' "$CONFIG_FILE")
-    # Expand $HOME in inline env values
-    INLINE_ENV_EXPANDED=$(echo "$INLINE_ENV" | sed "s|\\\$HOME|$HOME|g")
-    ENV_OBJ=$(echo "$ENV_OBJ" "$INLINE_ENV_EXPANDED" | jq -s 'add')
-
-    # Build the MCP server JSON
-    MCP_JSON=$(jq -n \
-        --arg type "stdio" \
-        --arg command "$MCP_COMMAND" \
-        --argjson args "$MCP_ARGS" \
-        --argjson env "$ENV_OBJ" \
-        '{type: $type, command: $command, args: $args, env: $env}')
 
     # If global, add to ~/.claude.json (user scope)
     if [ "$MCP_GLOBAL" = "true" ]; then
