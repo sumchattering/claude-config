@@ -94,47 +94,39 @@ fi
 echo ""
 echo "🔗 Setting up credential symlinks..."
 
-# Slack credentials
-if [ -f "$CLAUDE_CONFIG_DIR/slack-credentials.json" ]; then
-    if [ -L "$HOME/.slack-mcp-tokens.json" ]; then
-        echo "✓ Slack credentials symlink already exists"
-    elif [ -e "$HOME/.slack-mcp-tokens.json" ]; then
-        echo "⚠️  ~/.slack-mcp-tokens.json exists but is not a symlink"
-    else
-        ln -sf "$CLAUDE_CONFIG_DIR/slack-credentials.json" "$HOME/.slack-mcp-tokens.json"
-        echo "✓ Created Slack credentials symlink"
-    fi
-else
-    echo "- Slack credentials not found, skipping"
-fi
+# Helper function to create or fix credential symlinks
+# Handles broken symlinks by recreating them
+setup_credential_symlink() {
+    local source_file="$1"
+    local target_path="$2"
+    local name="$3"
 
-# Jira credentials
-if [ -f "$CLAUDE_CONFIG_DIR/jira-credentials.json" ]; then
-    if [ -L "$HOME/.jira-mcp-credentials.json" ]; then
-        echo "✓ Jira credentials symlink already exists"
-    elif [ -e "$HOME/.jira-mcp-credentials.json" ]; then
-        echo "⚠️  ~/.jira-mcp-credentials.json exists but is not a symlink"
-    else
-        ln -sf "$CLAUDE_CONFIG_DIR/jira-credentials.json" "$HOME/.jira-mcp-credentials.json"
-        echo "✓ Created Jira credentials symlink"
+    if [ ! -f "$source_file" ]; then
+        echo "- $name credentials not found, skipping"
+        return
     fi
-else
-    echo "- Jira credentials not found, skipping"
-fi
 
-# Iterable credentials
-if [ -f "$CLAUDE_CONFIG_DIR/iterable-credentials.json" ]; then
-    if [ -L "$HOME/.iterable-mcp-credentials.json" ]; then
-        echo "✓ Iterable credentials symlink already exists"
-    elif [ -e "$HOME/.iterable-mcp-credentials.json" ]; then
-        echo "⚠️  ~/.iterable-mcp-credentials.json exists but is not a symlink"
+    # Check if symlink exists and is valid
+    if [ -L "$target_path" ]; then
+        if [ -e "$target_path" ]; then
+            echo "✓ $name credentials symlink already exists"
+        else
+            # Broken symlink - remove and recreate
+            rm "$target_path"
+            ln -sf "$source_file" "$target_path"
+            echo "✓ Fixed broken $name credentials symlink"
+        fi
+    elif [ -e "$target_path" ]; then
+        echo "⚠️  $target_path exists but is not a symlink"
     else
-        ln -sf "$CLAUDE_CONFIG_DIR/iterable-credentials.json" "$HOME/.iterable-mcp-credentials.json"
-        echo "✓ Created Iterable credentials symlink"
+        ln -sf "$source_file" "$target_path"
+        echo "✓ Created $name credentials symlink"
     fi
-else
-    echo "- Iterable credentials not found, skipping"
-fi
+}
+
+setup_credential_symlink "$CLAUDE_CONFIG_DIR/slack-credentials.json" "$HOME/.slack-mcp-tokens.json" "Slack"
+setup_credential_symlink "$CLAUDE_CONFIG_DIR/jira-credentials.json" "$HOME/.jira-mcp-credentials.json" "Jira"
+setup_credential_symlink "$CLAUDE_CONFIG_DIR/iterable-credentials.json" "$HOME/.iterable-mcp-credentials.json" "Iterable"
 
 # ============================================================================
 # COMMANDS
@@ -353,9 +345,29 @@ for mcp_name in $MCP_NAMES; do
 done
 
 # ============================================================================
-# SUMMARY
+# RUN TESTS
 # ============================================================================
 echo ""
-echo "✅ Bootstrap complete!"
+echo "🧪 Running tests..."
 echo ""
-echo "Configuration loaded from: $CONFIG_FILE"
+
+TEST_SCRIPT="$CLAUDE_CONFIG_DIR/test.sh"
+if [ -f "$TEST_SCRIPT" ] && [ -x "$TEST_SCRIPT" ]; then
+    if "$TEST_SCRIPT"; then
+        echo ""
+        echo "✅ Bootstrap complete!"
+        echo ""
+        echo "Configuration loaded from: $CONFIG_FILE"
+    else
+        echo ""
+        echo "❌ Bootstrap completed but tests failed!"
+        echo "Please review the errors above and fix them."
+        exit 1
+    fi
+else
+    echo "⚠️  Test script not found or not executable: $TEST_SCRIPT"
+    echo ""
+    echo "✅ Bootstrap complete (tests skipped)"
+    echo ""
+    echo "Configuration loaded from: $CONFIG_FILE"
+fi

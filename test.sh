@@ -150,6 +150,26 @@ fi
 # ============================================================================
 section "Credential Symlinks"
 
+# Helper to check symlink status
+check_credential_file() {
+    local file_path="$1"
+    local mcp_name="$2"
+    local file_basename=$(basename "$file_path")
+
+    if [ -L "$file_path" ]; then
+        # It's a symlink - check if it resolves
+        if [ -e "$file_path" ]; then
+            pass "$mcp_name: $file_basename (valid symlink)"
+        else
+            fail "$mcp_name: $file_basename (BROKEN symlink)"
+        fi
+    elif [ -f "$file_path" ]; then
+        pass "$mcp_name: $file_basename (regular file)"
+    else
+        warn "$mcp_name: $file_basename missing"
+    fi
+}
+
 # Dynamically check credential files based on MCP envFile configs
 MCP_NAMES=$(jq -r '.mcpServers // {} | keys[]' "$CONFIG_FILE")
 for mcp_name in $MCP_NAMES; do
@@ -157,24 +177,17 @@ for mcp_name in $MCP_NAMES; do
 
     if [ -n "$ENV_FILE_RAW" ] && [ "$ENV_FILE_RAW" != "null" ]; then
         ENV_FILE_PATH=$(expand_path "$ENV_FILE_RAW")
-
-        if [ -e "$ENV_FILE_PATH" ]; then
-            pass "$mcp_name credentials file exists: $(basename "$ENV_FILE_PATH")"
-        else
-            warn "$mcp_name credentials file missing: $(basename "$ENV_FILE_PATH")"
-        fi
+        check_credential_file "$ENV_FILE_PATH" "$mcp_name"
     fi
 
-    # Also check env vars that reference token files
-    TOKEN_FILE=$(jq -r --arg name "$mcp_name" '.mcpServers[$name].env.SLACK_TOKEN_FILE // ""' "$CONFIG_FILE")
-    if [ -n "$TOKEN_FILE" ] && [ "$TOKEN_FILE" != "null" ]; then
-        TOKEN_FILE_PATH=$(expand_path "$TOKEN_FILE")
-        if [ -e "$TOKEN_FILE_PATH" ]; then
-            pass "$mcp_name token file exists: $(basename "$TOKEN_FILE_PATH")"
-        else
-            warn "$mcp_name token file missing: $(basename "$TOKEN_FILE_PATH")"
+    # Also check env vars that reference token files (dynamically find *_FILE env vars)
+    TOKEN_FILES=$(jq -r --arg name "$mcp_name" '.mcpServers[$name].env // {} | to_entries[] | select(.key | endswith("_FILE")) | .value' "$CONFIG_FILE")
+    for token_file in $TOKEN_FILES; do
+        if [ -n "$token_file" ] && [ "$token_file" != "null" ]; then
+            TOKEN_FILE_PATH=$(expand_path "$token_file")
+            check_credential_file "$TOKEN_FILE_PATH" "$mcp_name"
         fi
-    fi
+    done
 done
 
 # ============================================================================
