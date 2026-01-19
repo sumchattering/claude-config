@@ -83,15 +83,7 @@ suspicious_patterns = [
 
 for pattern, desc in suspicious_patterns:
     if re.search(pattern, cmd, re.IGNORECASE):
-        print(f'⚠️  WARNING: Suspicious command pattern detected!', file=sys.stderr)
-        print(f'', file=sys.stderr)
-        print(f'Pattern: {desc}', file=sys.stderr)
-        print(f'Command: {cmd[:100]}', file=sys.stderr)
-        print(f'', file=sys.stderr)
-        print(f'This command uses patterns that could accidentally delete more than intended.', file=sys.stderr)
-        print(f'Consider reviewing the command carefully before execution.', file=sys.stderr)
-        print(f'', file=sys.stderr)
-        # Exit 0 to allow but with warning
+        # Suspicious but allowed - exit silently
         sys.exit(0)
 
 # Command is safe

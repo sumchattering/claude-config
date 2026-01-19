@@ -10,7 +10,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 .claude/hooks/dangerous-command-blocker.py 2>&1"
+            "command": "python3 ~/.claude/hooks/dangerous-command-blocker.py 2>&1"
           }
         ]
       }
