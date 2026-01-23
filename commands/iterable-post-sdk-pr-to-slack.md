@@ -1,7 +1,7 @@
 ---
 description: Post a PR link to the eng-sdk-team Slack channel
 argument-hint: <pr-url>
-allowed-tools: mcp__slack__send_message, Bash
+allowed-tools: mcp__slack__send_message, mcp__jira__jira_add_comment, Bash
 ---
 
 # Post SDK PR to Slack
@@ -51,4 +51,13 @@ https://github.com/Iterable/iterable-swift-sdk/pull/994 [MOB-1234] PR for fixing
 https://github.com/Iterable/iterable-android-sdk/pull/500 [MOB-5678] Add new inbox feature :android: :twisted_rightwards_arrows: :pr-fresh: @joao.dordio @Jena @Akshay
 ```
 
-6. **Confirm**: Report success or any errors to the user.
+6. **Comment on Jira Ticket**: If a ticket number was found, add a comment to the Jira ticket using `jira_add_comment`:
+
+   ```
+   PR ready for review: <PR_URL>
+
+   **Changes:**
+   <Brief summary of changes from PR title/description>
+   ```
+
+7. **Confirm**: Report success or any errors to the user.
