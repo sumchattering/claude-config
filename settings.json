@@ -1,4 +1,7 @@
 {
+  "env": {
+    "ENABLE_TOOL_SEARCH": "auto"
+  },
   "statusLine": {
     "type": "command",
     "command": "ccstatusline"
