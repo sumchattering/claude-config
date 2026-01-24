@@ -111,6 +111,14 @@ if [ -f "$SETTINGS_FILE" ]; then
                 fail "settings.json missing '$key' section"
             fi
         done
+
+        # Check ENABLE_TOOL_SEARCH is configured
+        TOOL_SEARCH=$(jq -r '.env.ENABLE_TOOL_SEARCH // ""' "$SETTINGS_FILE")
+        if [ -n "$TOOL_SEARCH" ] && [ "$TOOL_SEARCH" != "null" ]; then
+            pass "ENABLE_TOOL_SEARCH is set to '$TOOL_SEARCH'"
+        else
+            warn "ENABLE_TOOL_SEARCH not configured in env"
+        fi
     fi
 else
     fail "~/.claude/settings.json not found"
