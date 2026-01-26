@@ -22,11 +22,7 @@
       "command": "npx",
       "args": ["-y", "mcp-jira-stdio"],
       "envFile": "$HOME/.jira-mcp-credentials.json",
-      "repositories": [
-        "$HOME/MyProjects/iterable-swift-sdk",
-        "$HOME/MyProjects/iterable-android-sdk",
-        "$HOME/MyProjects/react-native-sdk"
-      ]
+      "global": true
     },
     "iterable": {
       "command": "npx",
@@ -54,20 +50,24 @@
   },
   "commands": {
     "global": [
-      "review-uncommitted.md"
+      "review-uncommitted.md",
+      "jira-triage.md"
     ],
     "repositories": {
       "$HOME/MyProjects/iterable-swift-sdk": [
         "iterable-post-sdk-pr-to-slack.md",
-        "iterable-commit-push-pr.md"
+        "iterable-commit-push-pr.md",
+        "jira-triage.md"
       ],
       "$HOME/MyProjects/iterable-android-sdk": [
         "iterable-post-sdk-pr-to-slack.md",
-        "iterable-commit-push-pr.md"
+        "iterable-commit-push-pr.md",
+        "jira-triage.md"
       ],
       "$HOME/MyProjects/react-native-sdk": [
         "iterable-post-sdk-pr-to-slack.md",
-        "iterable-commit-push-pr.md"
+        "iterable-commit-push-pr.md",
+        "jira-triage.md"
       ]
     }
   }
