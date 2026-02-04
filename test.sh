@@ -396,6 +396,185 @@ for mcp_name in $MCP_NAMES; do
 done
 
 # ============================================================================
+# MCP TOOL VERIFICATION (verify expected tools are accessible)
+# ============================================================================
+section "MCP Tool Verification"
+
+# Check if mcp-list-tools is available or can be installed
+if command -v npx &> /dev/null; then
+    MCP_NAMES=$(jq -r '.mcpServers // {} | keys[]' "$CONFIG_FILE")
+    for mcp_name in $MCP_NAMES; do
+        EXPECTED_TOOLS=$(jq -r --arg name "$mcp_name" '.mcpServers[$name].expectedTools // [] | .[]' "$CONFIG_FILE" 2>/dev/null || echo "")
+
+        if [ -z "$EXPECTED_TOOLS" ]; then
+            warn "$mcp_name: no expectedTools configured (skipping tool verification)"
+            continue
+        fi
+
+        # Get MCP command and args
+        MCP_COMMAND=$(jq -r --arg name "$mcp_name" '.mcpServers[$name].command // ""' "$CONFIG_FILE")
+        MCP_ARGS=$(jq -r --arg name "$mcp_name" '.mcpServers[$name].args // [] | join(" ")' "$CONFIG_FILE")
+        MCP_TYPE=$(jq -r --arg name "$mcp_name" '.mcpServers[$name].type // "stdio"' "$CONFIG_FILE")
+
+        # Skip HTTP servers (can't easily list tools)
+        if [ "$MCP_TYPE" = "http" ]; then
+            warn "$mcp_name: HTTP server (tool verification not supported)"
+            continue
+        fi
+
+        # Build the full command
+        FULL_MCP_COMMAND="$MCP_COMMAND $MCP_ARGS"
+
+        echo "  Checking $mcp_name tools..."
+
+        # Get available tools using mcp-list-tools
+        AVAILABLE_TOOLS=$(npx -y mcp-list-tools "$FULL_MCP_COMMAND" 2>/dev/null | grep '"name"' | sed 's/.*"name": "//; s/".*//')
+
+        if [ -z "$AVAILABLE_TOOLS" ]; then
+            fail "$mcp_name: could not retrieve tools (server may require credentials)"
+            continue
+        fi
+
+        # Count available tools
+        TOOL_COUNT=$(echo "$AVAILABLE_TOOLS" | wc -l | tr -d ' ')
+        pass "$mcp_name: retrieved $TOOL_COUNT tools"
+
+        # Check each expected tool
+        MISSING_TOOLS=""
+        for expected_tool in $EXPECTED_TOOLS; do
+            if echo "$AVAILABLE_TOOLS" | grep -q "^${expected_tool}$"; then
+                pass "  $mcp_name: tool available: $expected_tool"
+            else
+                fail "  $mcp_name: tool MISSING: $expected_tool"
+                MISSING_TOOLS="$MISSING_TOOLS $expected_tool"
+            fi
+        done
+
+        if [ -n "$MISSING_TOOLS" ]; then
+            echo -e "    ${YELLOW}Missing tools may require additional env vars (PII, WRITES, SENDS)${NC}"
+        fi
+    done
+else
+    warn "npx not available (skipping MCP tool verification)"
+fi
+
+# ============================================================================
+# ITERABLE DATA VERIFICATION (list projects, campaigns, users)
+# ============================================================================
+section "Iterable Data Verification"
+
+# Check if iterable MCP is configured
+ITERABLE_CONFIGURED=$(jq -r '.mcpServers.iterable // ""' "$CONFIG_FILE")
+if [ -n "$ITERABLE_CONFIGURED" ] && [ "$ITERABLE_CONFIGURED" != "null" ]; then
+    # Check for credentials
+    ITERABLE_CREDS=$(expand_path "$(jq -r '.mcpServers.iterable.envFile // ""' "$CONFIG_FILE")")
+
+    if [ -f "$ITERABLE_CREDS" ]; then
+        pass "Iterable credentials found"
+
+        # Source the credentials to get API key
+        ITERABLE_API_KEY=$(jq -r '.ITERABLE_API_KEY // ""' "$ITERABLE_CREDS" 2>/dev/null)
+        ITERABLE_BASE_URL=$(jq -r '.ITERABLE_BASE_URL // "https://api.iterable.com"' "$ITERABLE_CREDS" 2>/dev/null)
+
+        if [ -n "$ITERABLE_API_KEY" ] && [ "$ITERABLE_API_KEY" != "null" ]; then
+            pass "Iterable API key configured"
+
+            echo ""
+            echo "  Fetching Iterable data..."
+            echo ""
+
+            # List Projects (using channels as a proxy for project access)
+            echo -e "  ${YELLOW}── Channels ──${NC}"
+            CHANNELS_RESPONSE=$(curl -s -X GET "${ITERABLE_BASE_URL}/api/channels" \
+                -H "Api-Key: $ITERABLE_API_KEY" \
+                -H "Content-Type: application/json" 2>/dev/null)
+
+            if echo "$CHANNELS_RESPONSE" | jq -e '.channels' > /dev/null 2>&1; then
+                CHANNEL_COUNT=$(echo "$CHANNELS_RESPONSE" | jq '.channels | length')
+                pass "Retrieved $CHANNEL_COUNT channels"
+                echo "$CHANNELS_RESPONSE" | jq -r '.channels[] | "     - \(.name) (id: \(.id), type: \(.channelType))"' 2>/dev/null | head -10
+            else
+                warn "Could not retrieve channels"
+            fi
+
+            echo ""
+
+            # List Campaigns
+            echo -e "  ${YELLOW}── Campaigns ──${NC}"
+            CAMPAIGNS_RESPONSE=$(curl -s -X GET "${ITERABLE_BASE_URL}/api/campaigns" \
+                -H "Api-Key: $ITERABLE_API_KEY" \
+                -H "Content-Type: application/json" 2>/dev/null)
+
+            if echo "$CAMPAIGNS_RESPONSE" | jq -e '.campaigns' > /dev/null 2>&1; then
+                CAMPAIGN_COUNT=$(echo "$CAMPAIGNS_RESPONSE" | jq '.campaigns | length')
+                pass "Retrieved $CAMPAIGN_COUNT campaigns"
+                echo "$CAMPAIGNS_RESPONSE" | jq -r '.campaigns[] | "     - \(.name) (id: \(.id), state: \(.campaignState), type: \(.type))"' 2>/dev/null | head -10
+                if [ "$CAMPAIGN_COUNT" -gt 10 ]; then
+                    echo "     ... and $((CAMPAIGN_COUNT - 10)) more"
+                fi
+            else
+                warn "Could not retrieve campaigns"
+            fi
+
+            echo ""
+
+            # List Users (sample - requires PII access)
+            echo -e "  ${YELLOW}── Users (sample) ──${NC}"
+            # Get users from a list or recent events
+            LISTS_RESPONSE=$(curl -s -X GET "${ITERABLE_BASE_URL}/api/lists" \
+                -H "Api-Key: $ITERABLE_API_KEY" \
+                -H "Content-Type: application/json" 2>/dev/null)
+
+            if echo "$LISTS_RESPONSE" | jq -e '.lists' > /dev/null 2>&1; then
+                LIST_COUNT=$(echo "$LISTS_RESPONSE" | jq '.lists | length')
+                pass "Retrieved $LIST_COUNT user lists"
+                echo "$LISTS_RESPONSE" | jq -r '.lists[] | "     - \(.name) (id: \(.id), type: \(.listType))"' 2>/dev/null | head -10
+                if [ "$LIST_COUNT" -gt 10 ]; then
+                    echo "     ... and $((LIST_COUNT - 10)) more"
+                fi
+
+                # Try to get users from the first list
+                FIRST_LIST_ID=$(echo "$LISTS_RESPONSE" | jq -r '.lists[0].id // ""')
+                if [ -n "$FIRST_LIST_ID" ] && [ "$FIRST_LIST_ID" != "null" ]; then
+                    echo ""
+                    echo -e "  ${YELLOW}── Sample Users (from first list) ──${NC}"
+                    USERS_RESPONSE=$(curl -s -X GET "${ITERABLE_BASE_URL}/api/lists/getUsers?listId=${FIRST_LIST_ID}" \
+                        -H "Api-Key: $ITERABLE_API_KEY" \
+                        -H "Content-Type: application/json" 2>/dev/null)
+
+                    # The response is newline-delimited emails
+                    if [ -n "$USERS_RESPONSE" ]; then
+                        USER_COUNT=$(echo "$USERS_RESPONSE" | wc -l | tr -d ' ')
+                        if [ "$USER_COUNT" -gt 0 ]; then
+                            pass "Retrieved $USER_COUNT users from list"
+                            echo "$USERS_RESPONSE" | head -5 | while read -r email; do
+                                echo "     - $email"
+                            done
+                            if [ "$USER_COUNT" -gt 5 ]; then
+                                echo "     ... and $((USER_COUNT - 5)) more"
+                            fi
+                        else
+                            warn "List is empty or PII access not enabled"
+                        fi
+                    else
+                        warn "Could not retrieve users (PII access may be required)"
+                    fi
+                fi
+            else
+                warn "Could not retrieve user lists"
+            fi
+
+        else
+            warn "Iterable API key not found in credentials file"
+        fi
+    else
+        warn "Iterable credentials file not found (skipping data verification)"
+    fi
+else
+    warn "Iterable MCP not configured (skipping data verification)"
+fi
+
+# ============================================================================
 # SUMMARY
 # ============================================================================
 section "Test Summary"

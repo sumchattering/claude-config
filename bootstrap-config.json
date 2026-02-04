@@ -13,9 +13,7 @@
         "SLACK_TOKEN_FILE": "$HOME/.slack-mcp-tokens.json"
       },
       "repositories": [
-        "$HOME/MyProjects/iterable-swift-sdk",
-        "$HOME/MyProjects/iterable-android-sdk",
-        "$HOME/MyProjects/react-native-sdk"
+        "$HOME/MyProjects"
       ]
     },
     "jira": {
@@ -30,12 +28,38 @@
       "envFile": "$HOME/.iterable-mcp-credentials.json",
       "env": {
         "ITERABLE_ENABLE_WRITES": "true",
-        "ITERABLE_USER_PII": "false"
+        "ITERABLE_USER_PII": "true",
+        "ITERABLE_ENABLE_SENDS": "true"
       },
       "repositories": [
         "$HOME/MyProjects/iterable-swift-sdk",
         "$HOME/MyProjects/iterable-android-sdk",
         "$HOME/MyProjects/react-native-sdk"
+      ],
+      "expectedTools": [
+        "get_campaigns",
+        "get_campaign",
+        "get_campaign_metrics",
+        "abort_campaign",
+        "cancel_campaign",
+        "get_catalogs",
+        "get_catalog_items",
+        "create_catalog",
+        "get_journeys",
+        "get_lists",
+        "create_list",
+        "get_templates",
+        "get_email_template",
+        "upsert_email_template",
+        "update_email_template",
+        "get_sms_template",
+        "get_push_template",
+        "get_inapp_template",
+        "get_snippets",
+        "create_snippet",
+        "get_user_fields",
+        "get_channels",
+        "get_message_types"
       ]
     },
     "sentry": {
