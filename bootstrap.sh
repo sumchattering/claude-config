@@ -4,22 +4,45 @@
 
 set -e
 
+# ============================================================================
+# COLORS (using tput for terminal portability)
+# ============================================================================
+if [ -t 1 ] && command -v tput &> /dev/null && [ "$(tput colors 2>/dev/null || echo 0)" -ge 8 ]; then
+    BOLD=$(tput bold)
+    DIM=$(tput dim)
+    RED=$(tput setaf 1)
+    GREEN=$(tput setaf 2)
+    YELLOW=$(tput setaf 3)
+    BLUE=$(tput setaf 4)
+    CYAN=$(tput setaf 6)
+    RESET=$(tput sgr0)
+else
+    BOLD=""
+    DIM=""
+    RED=""
+    GREEN=""
+    YELLOW=""
+    BLUE=""
+    CYAN=""
+    RESET=""
+fi
+
 # Dynamically determine the directory where this script is located
 CLAUDE_CONFIG_DIR="$(cd "$(dirname "$0")" && pwd)"
 CLAUDE_DIR="$HOME/.claude"
 CONFIG_FILE="$CLAUDE_CONFIG_DIR/bootstrap-config.json"
 
-echo "🚀 Bootstrapping Claude Config..."
+echo "${BOLD}${BLUE}Bootstrapping Claude Config...${RESET}"
 
 # Check for jq (required for parsing JSON config)
 if ! command -v jq &> /dev/null; then
-    echo "❌ jq is required but not found. Install it with: brew install jq"
+    echo "${RED}jq is required but not found. Install it with: brew install jq${RESET}"
     exit 1
 fi
 
 # Check config file exists
 if [ ! -f "$CONFIG_FILE" ]; then
-    echo "❌ Config file not found: $CONFIG_FILE"
+    echo "${RED}Config file not found: $CONFIG_FILE${RESET}"
     exit 1
 fi
 
@@ -30,13 +53,13 @@ mkdir -p "$CLAUDE_DIR"
 # CCSTATUSLINE
 # ============================================================================
 echo ""
-echo "📊 Setting up ccstatusline..."
+echo "${BOLD}${CYAN}Setting up ccstatusline...${RESET}"
 if command -v ccstatusline &> /dev/null; then
-    echo "  ✓ ccstatusline already installed"
+    echo "  ${GREEN}✓ ccstatusline already installed${RESET}"
 else
-    echo "  Installing ccstatusline..."
+    echo "  ${DIM}Installing ccstatusline...${RESET}"
     npm install -g ccstatusline
-    echo "  ✓ ccstatusline installed"
+    echo "  ${GREEN}✓ ccstatusline installed${RESET}"
 fi
 
 # Symlink ccstatusline config
@@ -44,7 +67,7 @@ CCSTATUSLINE_CONFIG_DIR="$HOME/.config/ccstatusline"
 mkdir -p "$CCSTATUSLINE_CONFIG_DIR"
 rm -f "$CCSTATUSLINE_CONFIG_DIR/settings.json"
 ln -sf "$CLAUDE_CONFIG_DIR/ccstatusline-settings.json" "$CCSTATUSLINE_CONFIG_DIR/settings.json"
-echo "  ✓ ccstatusline config symlinked"
+echo "  ${GREEN}✓ ccstatusline config symlinked${RESET}"
 
 # Helper function to expand $HOME in paths
 expand_path() {
@@ -55,27 +78,27 @@ expand_path() {
 # SETTINGS
 # ============================================================================
 echo ""
-echo "🔧 Configuring Claude permissions..."
+echo "${BOLD}${CYAN}Configuring Claude permissions...${RESET}"
 SETTINGS_FILE="$CLAUDE_DIR/settings.json"
 CONFIG_SETTINGS="$CLAUDE_CONFIG_DIR/settings.json"
 
 if [ -f "$CONFIG_SETTINGS" ]; then
     if [ -f "$SETTINGS_FILE" ]; then
         jq -s '.[0] * .[1]' "$SETTINGS_FILE" "$CONFIG_SETTINGS" > "$SETTINGS_FILE.tmp" && mv "$SETTINGS_FILE.tmp" "$SETTINGS_FILE"
-        echo "✓ Merged permissions into existing settings.json"
+        echo "  ${GREEN}✓ Merged permissions into existing settings.json${RESET}"
     else
         cp "$CONFIG_SETTINGS" "$SETTINGS_FILE"
-        echo "✓ Created settings.json with Claude permissions"
+        echo "  ${GREEN}✓ Created settings.json with Claude permissions${RESET}"
     fi
 else
-    echo "⚠️  settings.json not found in config directory"
+    echo "  ${YELLOW}⚠️  settings.json not found in config directory${RESET}"
 fi
 
 # ============================================================================
 # HOOKS
 # ============================================================================
 echo ""
-echo "🪝 Setting up hooks..."
+echo "${BOLD}${CYAN}Setting up hooks...${RESET}"
 HOOKS_DIR="$CLAUDE_CONFIG_DIR/hooks"
 
 if [ -d "$HOOKS_DIR" ]; then
@@ -83,16 +106,16 @@ if [ -d "$HOOKS_DIR" ]; then
     GLOBAL_HOOKS_DIR="$CLAUDE_DIR/hooks"
     mkdir -p "$GLOBAL_HOOKS_DIR"
     cp -r "$HOOKS_DIR"/* "$GLOBAL_HOOKS_DIR/" 2>/dev/null || true
-    echo "✓ Hooks copied to ~/.claude/hooks/"
+    echo "  ${GREEN}✓ Hooks copied to ~/.claude/hooks/${RESET}"
 else
-    echo "- No hooks directory found, skipping"
+    echo "  ${DIM}- No hooks directory found, skipping${RESET}"
 fi
 
 # ============================================================================
 # CREDENTIAL SYMLINKS
 # ============================================================================
 echo ""
-echo "🔗 Setting up credential symlinks..."
+echo "${BOLD}${CYAN}Setting up credential symlinks...${RESET}"
 
 # Helper function to create or fix credential symlinks
 # Handles broken symlinks by recreating them
@@ -102,25 +125,25 @@ setup_credential_symlink() {
     local name="$3"
 
     if [ ! -f "$source_file" ]; then
-        echo "- $name credentials not found, skipping"
+        echo "  ${DIM}- $name credentials not found, skipping${RESET}"
         return
     fi
 
     # Check if symlink exists and is valid
     if [ -L "$target_path" ]; then
         if [ -e "$target_path" ]; then
-            echo "✓ $name credentials symlink already exists"
+            echo "  ${GREEN}✓ $name credentials symlink already exists${RESET}"
         else
             # Broken symlink - remove and recreate
             rm "$target_path"
             ln -sf "$source_file" "$target_path"
-            echo "✓ Fixed broken $name credentials symlink"
+            echo "  ${GREEN}✓ Fixed broken $name credentials symlink${RESET}"
         fi
     elif [ -e "$target_path" ]; then
-        echo "⚠️  $target_path exists but is not a symlink"
+        echo "  ${YELLOW}⚠️  $target_path exists but is not a symlink${RESET}"
     else
         ln -sf "$source_file" "$target_path"
-        echo "✓ Created $name credentials symlink"
+        echo "  ${GREEN}✓ Created $name credentials symlink${RESET}"
     fi
 }
 
@@ -132,7 +155,7 @@ setup_credential_symlink "$CLAUDE_CONFIG_DIR/iterable-credentials.json" "$HOME/.
 # COMMANDS
 # ============================================================================
 echo ""
-echo "📝 Setting up commands..."
+echo "${BOLD}${CYAN}Setting up commands...${RESET}"
 
 # Global commands - symlink to ~/.claude/commands/
 GLOBAL_COMMANDS_DIR="$CLAUDE_DIR/commands"
@@ -146,9 +169,9 @@ GLOBAL_COMMANDS=$(jq -r '.commands.global // [] | .[]' "$CONFIG_FILE")
 for cmd in $GLOBAL_COMMANDS; do
     if [ -f "$CLAUDE_CONFIG_DIR/commands/$cmd" ]; then
         ln -sf "$CLAUDE_CONFIG_DIR/commands/$cmd" "$GLOBAL_COMMANDS_DIR/$cmd"
-        echo "✓ Global command: $cmd"
+        echo "  ${GREEN}✓ Global command: $cmd${RESET}"
     else
-        echo "⚠️  Command not found: $cmd"
+        echo "  ${YELLOW}⚠️  Command not found: $cmd${RESET}"
     fi
 done
 
@@ -158,7 +181,7 @@ for repo_path_raw in $REPO_PATHS; do
     repo_path=$(expand_path "$repo_path_raw")
 
     if [ ! -d "$repo_path" ]; then
-        echo "⚠️  Skipping missing project: $repo_path"
+        echo "  ${YELLOW}⚠️  Skipping missing project: $repo_path${RESET}"
         continue
     fi
 
@@ -173,9 +196,9 @@ for repo_path_raw in $REPO_PATHS; do
     for cmd in $REPO_COMMANDS; do
         if [ -f "$CLAUDE_CONFIG_DIR/commands/$cmd" ]; then
             ln -sf "$CLAUDE_CONFIG_DIR/commands/$cmd" "$REPO_COMMANDS_DIR/$cmd"
-            echo "✓ $(basename "$repo_path"): $cmd"
+            echo "  ${GREEN}✓ $(basename "$repo_path"): $cmd${RESET}"
         else
-            echo "⚠️  Command not found: $cmd"
+            echo "  ${YELLOW}⚠️  Command not found: $cmd${RESET}"
         fi
     done
 
@@ -191,7 +214,7 @@ done
 # MCP SERVERS
 # ============================================================================
 echo ""
-echo "📦 Setting up MCP servers..."
+echo "${BOLD}${CYAN}Setting up MCP servers...${RESET}"
 
 # Function to add or update MCP in global ~/.claude.json (user scope)
 add_mcp_to_global() {
@@ -246,7 +269,7 @@ MCP_NAMES=$(jq -r '.mcpServers // {} | keys[]' "$CONFIG_FILE")
 
 for mcp_name in $MCP_NAMES; do
     echo ""
-    echo "  Setting up $mcp_name MCP..."
+    echo "  ${BOLD}Setting up $mcp_name MCP...${RESET}"
 
     # Get MCP config - check type first
     MCP_TYPE=$(jq -r --arg name "$mcp_name" '.mcpServers[$name].type // "stdio"' "$CONFIG_FILE")
@@ -256,7 +279,7 @@ for mcp_name in $MCP_NAMES; do
     # Handle http-type MCP servers differently
     if [ "$MCP_TYPE" = "http" ]; then
         MCP_URL=$(jq -r --arg name "$mcp_name" '.mcpServers[$name].url' "$CONFIG_FILE")
-        echo "    ✓ HTTP MCP server: $MCP_URL"
+        echo "    ${GREEN}✓ HTTP MCP server: $MCP_URL${RESET}"
 
         # Build the MCP server JSON for http type
         MCP_JSON=$(jq -n \
@@ -271,29 +294,29 @@ for mcp_name in $MCP_NAMES; do
         # Check if package is installed (skip for npx commands since they auto-install)
         if [ "$MCP_COMMAND" != "npx" ]; then
             if command -v "$MCP_COMMAND" &> /dev/null; then
-                echo "    ✓ $MCP_COMMAND already installed"
+                echo "    ${GREEN}✓ $MCP_COMMAND already installed${RESET}"
             else
-                echo "    ⚠️  $MCP_COMMAND not found"
+                echo "    ${YELLOW}⚠️  $MCP_COMMAND not found${RESET}"
                 if [ -n "$MCP_INSTALL" ] && [ "$MCP_INSTALL" != "null" ]; then
                     read -p "    Install with '$MCP_INSTALL'? [y/N] " -n 1 -r
                     echo
                     if [[ $REPLY =~ ^[Yy]$ ]]; then
-                        echo "    Installing $mcp_name..."
+                        echo "    ${DIM}Installing $mcp_name...${RESET}"
                         eval "$MCP_INSTALL"
                         if command -v "$MCP_COMMAND" &> /dev/null; then
-                            echo "    ✓ $MCP_COMMAND installed successfully"
+                            echo "    ${GREEN}✓ $MCP_COMMAND installed successfully${RESET}"
                         else
-                            echo "    ❌ Installation failed. Please install manually: $MCP_INSTALL"
+                            echo "    ${RED}Installation failed. Please install manually: $MCP_INSTALL${RESET}"
                         fi
                     else
-                        echo "    Skipped. Install manually with: $MCP_INSTALL"
+                        echo "    ${DIM}Skipped. Install manually with: $MCP_INSTALL${RESET}"
                     fi
                 else
-                    echo "    No install command configured. Add 'install' field to config."
+                    echo "    ${DIM}No install command configured. Add 'install' field to config.${RESET}"
                 fi
             fi
         else
-            echo "    ✓ Uses npx (auto-installs on first run)"
+            echo "    ${GREEN}✓ Uses npx (auto-installs on first run)${RESET}"
         fi
         MCP_ARGS=$(jq -c --arg name "$mcp_name" '.mcpServers[$name].args // []' "$CONFIG_FILE")
         MCP_ENV_FILE_RAW=$(jq -r --arg name "$mcp_name" '.mcpServers[$name].envFile // ""' "$CONFIG_FILE")
@@ -327,7 +350,7 @@ for mcp_name in $MCP_NAMES; do
     # If global, add to ~/.claude.json (user scope)
     if [ "$MCP_GLOBAL" = "true" ]; then
         add_mcp_to_global "$mcp_name" "$MCP_JSON"
-        echo "    ✓ Added $mcp_name globally to ~/.claude.json"
+        echo "    ${GREEN}✓ Added $mcp_name globally to ~/.claude.json${RESET}"
     fi
 
     # Install MCP in each repository
@@ -335,12 +358,12 @@ for mcp_name in $MCP_NAMES; do
         repo_path=$(expand_path "$repo_path_raw")
 
         if [ ! -d "$repo_path" ]; then
-            echo "    ⚠️  Skipping missing project: $repo_path"
+            echo "    ${YELLOW}⚠️  Skipping missing project: $repo_path${RESET}"
             continue
         fi
 
         add_mcp_to_repo "$repo_path" "$mcp_name" "$MCP_JSON"
-        echo "    ✓ Added $mcp_name to $(basename "$repo_path")"
+        echo "    ${GREEN}✓ Added $mcp_name to $(basename "$repo_path")${RESET}"
     done
 done
 
@@ -348,20 +371,23 @@ done
 # SHELL CONFIGURATION (claude function & killall-orphan-claude)
 # ============================================================================
 echo ""
-echo "🐚 Setting up shell configuration..."
+echo "${BOLD}${CYAN}Setting up shell configuration...${RESET}"
 
 # Prompt for --dangerously-skip-permissions
 echo ""
-echo "  Claude can run with --dangerously-skip-permissions to skip all permission prompts."
-echo "  This is convenient but bypasses safety checks."
+echo "  Claude can run with ${BOLD}--dangerously-skip-permissions${RESET} to skip all permission prompts."
+echo "  We do have some safety built in with the ${GREEN}dangerous command blocker${RESET}, but there are"
+echo "  some risks. Either way, you can always use ${BOLD}claude --sandbox${RESET} to run with"
+echo "  --dangerously-skip-permissions inside a Docker sandbox, which is much safer."
+echo ""
 read -p "  Use --dangerously-skip-permissions by default? [y/N] " -n 1 -r
 echo
 if [[ $REPLY =~ ^[Yy]$ ]]; then
     SKIP_PERMISSIONS="true"
-    echo "  ✓ Will use --dangerously-skip-permissions"
+    echo "  ${GREEN}✓ Will use --dangerously-skip-permissions${RESET}"
 else
     SKIP_PERMISSIONS="false"
-    echo "  ✓ Will use standard permissions"
+    echo "  ${GREEN}✓ Will use standard permissions${RESET}"
 fi
 
 # Generate ~/.claude-shell-config.sh
@@ -415,7 +441,7 @@ claude() {
 }
 EOF
 
-echo "  ✓ Generated ~/.claude-shell-config.sh"
+echo "  ${GREEN}✓ Generated ~/.claude-shell-config.sh${RESET}"
 
 # Add source line to .bashrc and .zshrc (at the end, so it runs after .bash_profile/.extra)
 MANAGED_START="# >>> claude-config >>>"
@@ -426,15 +452,25 @@ for rc_file in "$HOME/.bashrc" "$HOME/.zshrc"; do
         continue
     fi
 
+    # Resolve symlinks for sed compatibility (sed -i fails on symlinks on macOS)
+    real_rc_file="$rc_file"
+    if [ -L "$rc_file" ]; then
+        real_rc_file="$(readlink "$rc_file")"
+        # Handle relative symlinks
+        if [[ "$real_rc_file" != /* ]]; then
+            real_rc_file="$(dirname "$rc_file")/$real_rc_file"
+        fi
+    fi
+
     # Remove any existing alias claude= lines from rc file
-    if grep -q "^alias claude=" "$rc_file" 2>/dev/null; then
-        sed -i '' '/^alias claude=/d' "$rc_file"
-        echo "  ✓ Removed old claude alias from $(basename "$rc_file")"
+    if grep -q "^alias claude=" "$real_rc_file" 2>/dev/null; then
+        sed -i '' '/^alias claude=/d' "$real_rc_file"
+        echo "  ${GREEN}✓ Removed old claude alias from $(basename "$rc_file")${RESET}"
     fi
 
     # Remove existing managed block if present
-    if grep -q "$MANAGED_START" "$rc_file" 2>/dev/null; then
-        sed -i '' "/$MANAGED_START/,/$MANAGED_END/d" "$rc_file"
+    if grep -q "$MANAGED_START" "$real_rc_file" 2>/dev/null; then
+        sed -i '' "/$MANAGED_START/,/$MANAGED_END/d" "$real_rc_file"
     fi
 
     # Append managed block
@@ -444,35 +480,56 @@ for rc_file in "$HOME/.bashrc" "$HOME/.zshrc"; do
         echo "# Managed by claude-config bootstrap - do not edit manually"
         echo '[ -f ~/.claude-shell-config.sh ] && source ~/.claude-shell-config.sh'
         echo "$MANAGED_END"
-    } >> "$rc_file"
+    } >> "$real_rc_file"
 
-    echo "  ✓ Added claude config to $(basename "$rc_file")"
+    echo "  ${GREEN}✓ Added claude config to $(basename "$rc_file")${RESET}"
 done
 
 # ============================================================================
 # RUN TESTS
 # ============================================================================
 echo ""
-echo "🧪 Running tests..."
+echo "${BOLD}${CYAN}Running tests...${RESET}"
 echo ""
 
 TEST_SCRIPT="$CLAUDE_CONFIG_DIR/test.sh"
 if [ -f "$TEST_SCRIPT" ] && [ -x "$TEST_SCRIPT" ]; then
     if "$TEST_SCRIPT"; then
         echo ""
-        echo "✅ Bootstrap complete!"
+        echo "${BOLD}${GREEN}Bootstrap complete!${RESET}"
         echo ""
-        echo "Configuration loaded from: $CONFIG_FILE"
+        echo "${DIM}Configuration loaded from: $CONFIG_FILE${RESET}"
     else
         echo ""
-        echo "❌ Bootstrap completed but tests failed!"
-        echo "Please review the errors above and fix them."
+        echo "${BOLD}${RED}Bootstrap completed but tests failed!${RESET}"
+        echo "${RED}Please review the errors above and fix them.${RESET}"
         exit 1
     fi
 else
-    echo "⚠️  Test script not found or not executable: $TEST_SCRIPT"
+    echo "${YELLOW}⚠️  Test script not found or not executable: $TEST_SCRIPT${RESET}"
     echo ""
-    echo "✅ Bootstrap complete (tests skipped)"
+    echo "${BOLD}${GREEN}Bootstrap complete (tests skipped)${RESET}"
     echo ""
-    echo "Configuration loaded from: $CONFIG_FILE"
+    echo "${DIM}Configuration loaded from: $CONFIG_FILE${RESET}"
 fi
+
+# ============================================================================
+# USAGE SUMMARY
+# ============================================================================
+echo ""
+echo "${BOLD}${BLUE}Usage:${RESET}"
+echo ""
+echo "  ${BOLD}claude${RESET}"
+echo "    ${DIM}1. Kills any orphaned Claude processes${RESET}"
+echo "    ${DIM}2. Clears the screen${RESET}"
+if [ "$SKIP_PERMISSIONS" = "true" ]; then
+    echo "    ${DIM}3. Launches Claude with --dangerously-skip-permissions${RESET}"
+else
+    echo "    ${DIM}3. Launches Claude with standard permissions${RESET}"
+fi
+echo ""
+echo "  ${BOLD}claude --sandbox${RESET}"
+echo "    ${DIM}1. Kills any orphaned Claude processes${RESET}"
+echo "    ${DIM}2. Clears the screen${RESET}"
+echo "    ${DIM}3. Launches Claude with --dangerously-skip-permissions inside a Docker sandbox${RESET}"
+echo ""
