@@ -50,6 +50,26 @@ fi
 mkdir -p "$CLAUDE_DIR"
 
 # ============================================================================
+# UPDATE CLAUDE CODE
+# ============================================================================
+echo ""
+echo "${BOLD}${CYAN}Updating Claude Code...${RESET}"
+if command -v claude &> /dev/null; then
+    CURRENT_VERSION=$(claude --version 2>/dev/null | head -1)
+    echo "  ${DIM}Current version: $CURRENT_VERSION${RESET}"
+    claude update 2>&1 | tail -3
+    NEW_VERSION=$(claude --version 2>/dev/null | head -1)
+    if [ "$CURRENT_VERSION" = "$NEW_VERSION" ]; then
+        echo "  ${GREEN}✓ Claude Code is already up to date ($NEW_VERSION)${RESET}"
+    else
+        echo "  ${GREEN}✓ Claude Code updated to $NEW_VERSION${RESET}"
+    fi
+else
+    echo "  ${YELLOW}⚠️  Claude Code not found. Install it:${RESET}"
+    echo "    ${DIM}curl -fsSL https://cli.anthropic.com/install.sh | sh${RESET}"
+fi
+
+# ============================================================================
 # CCSTATUSLINE
 # ============================================================================
 echo ""
@@ -378,7 +398,7 @@ echo ""
 echo "  Claude can run with ${BOLD}--dangerously-skip-permissions${RESET} to skip all permission prompts."
 echo "  We do have some safety built in with the ${GREEN}dangerous command blocker${RESET}, but there are"
 echo "  some risks. Either way, you can always use ${BOLD}claude --sandbox${RESET} to run with"
-echo "  --dangerously-skip-permissions inside a Docker sandbox, which is much safer."
+echo "  --dangerously-skip-permissions inside a sandboxed environment, which is much safer."
 echo ""
 read -p "  Use --dangerously-skip-permissions by default? [y/N] " -n 1 -r
 echo
@@ -389,6 +409,18 @@ else
     SKIP_PERMISSIONS="false"
     echo "  ${GREEN}✓ Will use standard permissions${RESET}"
 fi
+
+# Generate ~/.claude-sandbox-settings.json for sandbox mode
+SANDBOX_SETTINGS="$HOME/.claude-sandbox-settings.json"
+cat > "$SANDBOX_SETTINGS" << 'SANDBOXEOF'
+{
+  "sandbox": {
+    "enabled": true,
+    "mode": "auto-allow"
+  }
+}
+SANDBOXEOF
+echo "  ${GREEN}✓ Generated ~/.claude-sandbox-settings.json${RESET}"
 
 # Generate ~/.claude-shell-config.sh
 SHELL_CONFIG="$HOME/.claude-shell-config.sh"
@@ -426,13 +458,13 @@ cat >> "$SHELL_CONFIG" << EOF
 
 # Claude wrapper function
 # Usage: claude [args]          - normal mode
-#        claude --sandbox [args] - Docker sandbox mode (always uses --dangerously-skip-permissions)
+#        claude --sandbox [args] - sandboxed mode (uses macOS Seatbelt / Linux bubblewrap)
 claude() {
     if [ "\$1" = "--sandbox" ]; then
         shift
         killall-orphan-claude
         clear
-        command docker sandbox run claude . -- --dangerously-skip-permissions "\$@"
+        command claude --dangerously-skip-permissions --settings ~/.claude-sandbox-settings.json "\$@"
     else
         killall-orphan-claude
         clear
@@ -531,5 +563,38 @@ echo ""
 echo "  ${BOLD}claude --sandbox${RESET}"
 echo "    ${DIM}1. Kills any orphaned Claude processes${RESET}"
 echo "    ${DIM}2. Clears the screen${RESET}"
-echo "    ${DIM}3. Launches Claude with --dangerously-skip-permissions inside a Docker sandbox${RESET}"
+echo "    ${DIM}3. Launches Claude with --dangerously-skip-permissions in a sandboxed environment${RESET}"
+echo "    ${DIM}   (uses macOS Seatbelt or Linux bubblewrap for filesystem/network isolation)${RESET}"
+echo ""
+
+# ============================================================================
+# NEXT STEPS - CREDENTIALS
+# ============================================================================
+echo "${BOLD}${BLUE}MCP Server Credentials:${RESET}"
+echo ""
+
+CREDS_MISSING=false
+for cred_example in "$CLAUDE_CONFIG_DIR"/*-credentials.json.example; do
+    [ -f "$cred_example" ] || continue
+    cred_name=$(basename "$cred_example" .json.example)
+    actual_cred="$CLAUDE_CONFIG_DIR/${cred_name}.json"
+    # Capitalize the service name (e.g. "slack-credentials" -> "Slack")
+    display_name=$(echo "$cred_name" | sed 's/-credentials//' | awk '{print toupper(substr($0,1,1)) substr($0,2)}')
+
+    if [ -f "$actual_cred" ]; then
+        echo "  ${GREEN}✓ $display_name credentials configured${RESET}"
+    else
+        echo "  ${YELLOW}○ $display_name credentials missing${RESET}"
+        echo "    ${DIM}Copy ${cred_name}.json.example to ${cred_name}.json and fill in your credentials${RESET}"
+        CREDS_MISSING=true
+    fi
+done
+
+if [ "$CREDS_MISSING" = true ]; then
+    echo ""
+    echo "  ${DIM}MCP servers without credentials will not be activated until credentials are provided.${RESET}"
+fi
+echo ""
+
+echo "${DIM}Restart your terminal or run 'source ~/.claude-shell-config.sh' to activate changes.${RESET}"
 echo ""
