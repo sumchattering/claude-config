@@ -422,6 +422,16 @@ if command -v npx &> /dev/null; then
             continue
         fi
 
+        # Skip if credentials are missing
+        MCP_ENV_FILE_RAW=$(jq -r --arg name "$mcp_name" '.mcpServers[$name].envFile // ""' "$CONFIG_FILE")
+        if [ -n "$MCP_ENV_FILE_RAW" ] && [ "$MCP_ENV_FILE_RAW" != "null" ]; then
+            MCP_ENV_FILE_PATH=$(expand_path "$MCP_ENV_FILE_RAW")
+            if [ ! -f "$MCP_ENV_FILE_PATH" ]; then
+                warn "$mcp_name: credentials missing ($MCP_ENV_FILE_PATH), skipping tool verification"
+                continue
+            fi
+        fi
+
         # Build the full command
         FULL_MCP_COMMAND="$MCP_COMMAND $MCP_ARGS"
 

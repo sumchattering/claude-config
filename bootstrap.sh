@@ -53,16 +53,31 @@ mkdir -p "$CLAUDE_DIR"
 # UPDATE CLAUDE CODE
 # ============================================================================
 echo ""
-echo "${BOLD}${CYAN}Updating Claude Code...${RESET}"
+echo "${BOLD}${CYAN}Checking Claude Code version...${RESET}"
 if command -v claude &> /dev/null; then
-    CURRENT_VERSION=$(claude --version 2>/dev/null | head -1)
+    CURRENT_VERSION_FULL=$(claude --version 2>/dev/null | head -1)
+    # Extract bare semver (e.g. "2.1.42") from strings like "2.1.42 (Claude Code)"
+    CURRENT_VERSION=$(echo "$CURRENT_VERSION_FULL" | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
     echo "  ${DIM}Current version: $CURRENT_VERSION${RESET}"
-    claude update 2>&1 | tail -3
-    NEW_VERSION=$(claude --version 2>/dev/null | head -1)
-    if [ "$CURRENT_VERSION" = "$NEW_VERSION" ]; then
-        echo "  ${GREEN}✓ Claude Code is already up to date ($NEW_VERSION)${RESET}"
+
+    # Check for latest version without updating
+    LATEST_VERSION=$(npm view @anthropic-ai/claude-code version 2>/dev/null || echo "")
+
+    if [ -z "$LATEST_VERSION" ]; then
+        echo "  ${YELLOW}⚠️  Could not check latest version (npm registry unreachable)${RESET}"
+    elif [ "$CURRENT_VERSION" = "$LATEST_VERSION" ]; then
+        echo "  ${GREEN}✓ Claude Code is up to date ($CURRENT_VERSION)${RESET}"
     else
-        echo "  ${GREEN}✓ Claude Code updated to $NEW_VERSION${RESET}"
+        echo "  ${YELLOW}Update available: $CURRENT_VERSION → $LATEST_VERSION${RESET}"
+        read -p "  Update Claude Code now? [y/N] " -n 1 -r
+        echo
+        if [[ $REPLY =~ ^[Yy]$ ]]; then
+            claude update 2>&1 | tail -3
+            NEW_VERSION=$(claude --version 2>/dev/null | head -1)
+            echo "  ${GREEN}✓ Claude Code updated to $NEW_VERSION${RESET}"
+        else
+            echo "  ${DIM}Skipped. Run 'claude update' to update manually.${RESET}"
+        fi
     fi
 else
     echo "  ${YELLOW}⚠️  Claude Code not found. Install it:${RESET}"
