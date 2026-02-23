@@ -1,6 +1,6 @@
 {
   "env": {
-    "ENABLE_TOOL_SEARCH": "auto"
+    "ENABLE_TOOL_SEARCH": "true"
   },
   "statusLine": {
     "type": "command",
