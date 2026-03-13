@@ -366,6 +366,60 @@ for mcp_name in $MCP_NAMES; do
 done
 
 # ============================================================================
+# OAUTH MCP SERVERS (user scope registration)
+# ============================================================================
+section "OAuth MCP Servers"
+
+MCP_NAMES=$(jq -r '.mcpServers // {} | keys[]' "$CONFIG_FILE")
+HAS_OAUTH=false
+for mcp_name in $MCP_NAMES; do
+    MCP_OAUTH=$(jq -r --arg name "$mcp_name" '.mcpServers[$name].oauth // false' "$CONFIG_FILE")
+    MCP_TYPE=$(jq -r --arg name "$mcp_name" '.mcpServers[$name].type // "stdio"' "$CONFIG_FILE")
+
+    if [ "$MCP_OAUTH" = "true" ] && [ "$MCP_TYPE" = "http" ]; then
+        HAS_OAUTH=true
+        MCP_URL=$(jq -r --arg name "$mcp_name" '.mcpServers[$name].url' "$CONFIG_FILE")
+
+        # Check if registered at user scope
+        if command -v claude &> /dev/null; then
+            REGISTERED=$(claude mcp list 2>/dev/null | grep -c "$mcp_name" || true)
+            if [ "$REGISTERED" -gt 0 ]; then
+                pass "$mcp_name: registered at user scope (OAuth)"
+            else
+                warn "$mcp_name: not registered at user scope (run bootstrap to authenticate)"
+            fi
+        else
+            warn "$mcp_name: Claude CLI not found (cannot verify OAuth registration)"
+        fi
+
+        # Verify URL is configured in per-repo .mcp.json files
+        MCP_REPOS=$(jq -r --arg name "$mcp_name" '.mcpServers[$name].repositories // [] | .[]' "$CONFIG_FILE")
+        for repo_path_raw in $MCP_REPOS; do
+            repo_path=$(expand_path "$repo_path_raw")
+            repo_name=$(basename "$repo_path")
+
+            if [ ! -d "$repo_path" ]; then
+                continue
+            fi
+
+            MCP_FILE="$repo_path/.mcp.json"
+            if [ -f "$MCP_FILE" ]; then
+                CONFIGURED_URL=$(jq -r --arg name "$mcp_name" '.mcpServers[$name].url // ""' "$MCP_FILE")
+                if [ "$CONFIGURED_URL" = "$MCP_URL" ]; then
+                    pass "$mcp_name: $repo_name .mcp.json URL matches"
+                else
+                    fail "$mcp_name: $repo_name .mcp.json URL mismatch"
+                fi
+            fi
+        done
+    fi
+done
+
+if [ "$HAS_OAUTH" = "false" ]; then
+    warn "No OAuth MCP servers configured"
+fi
+
+# ============================================================================
 # MCP BINARY CHECKS (for non-npx servers)
 # ============================================================================
 section "MCP Server Binaries"

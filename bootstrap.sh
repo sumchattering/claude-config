@@ -408,6 +408,80 @@ for mcp_name in $MCP_NAMES; do
 done
 
 # ============================================================================
+# OAUTH MCP AUTHENTICATION
+# ============================================================================
+echo ""
+echo "${BOLD}${CYAN}Setting up OAuth MCP servers...${RESET}"
+
+# Collect HTTP MCP servers that require OAuth
+OAUTH_SERVERS=()
+for mcp_name in $MCP_NAMES; do
+    MCP_OAUTH=$(jq -r --arg name "$mcp_name" '.mcpServers[$name].oauth // false' "$CONFIG_FILE")
+    MCP_TYPE=$(jq -r --arg name "$mcp_name" '.mcpServers[$name].type // "stdio"' "$CONFIG_FILE")
+
+    if [ "$MCP_OAUTH" = "true" ] && [ "$MCP_TYPE" = "http" ]; then
+        MCP_URL=$(jq -r --arg name "$mcp_name" '.mcpServers[$name].url' "$CONFIG_FILE")
+        OAUTH_SERVERS+=("$mcp_name")
+
+        # Register at user scope so OAuth tokens are available globally
+        if command -v claude &> /dev/null; then
+            # Check if already registered at user scope
+            EXISTING=$(claude mcp list 2>/dev/null | grep -c "$mcp_name" || true)
+            if [ "$EXISTING" -gt 0 ]; then
+                echo "  ${GREEN}✓ $mcp_name already registered at user scope${RESET}"
+            else
+                echo "  ${DIM}Registering $mcp_name at user scope...${RESET}"
+                claude mcp add --transport http --scope user "$mcp_name" "$MCP_URL" 2>/dev/null
+                if [ $? -eq 0 ]; then
+                    echo "  ${GREEN}✓ $mcp_name registered at user scope${RESET}"
+                else
+                    echo "  ${YELLOW}⚠️  Could not register $mcp_name (register manually: claude mcp add --transport http --scope user $mcp_name \"$MCP_URL\")${RESET}"
+                fi
+            fi
+        else
+            echo "  ${YELLOW}⚠️  Claude CLI not found, skipping OAuth registration for $mcp_name${RESET}"
+        fi
+    fi
+done
+
+# Prompt user to authenticate OAuth servers
+if [ ${#OAUTH_SERVERS[@]} -gt 0 ]; then
+    echo ""
+    echo "  ${BOLD}${YELLOW}OAuth authentication required for:${RESET}"
+    for server in "${OAUTH_SERVERS[@]}"; do
+        echo "    ${YELLOW}○ $server${RESET}"
+    done
+    echo ""
+    echo "  OAuth tokens are stored securely in the ${BOLD}macOS system keychain${RESET}."
+    echo ""
+    read -p "  Authenticate OAuth servers now? [Y/n] " -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Nn]$ ]]; then
+        for server in "${OAUTH_SERVERS[@]}"; do
+            MCP_URL=$(jq -r --arg name "$server" '.mcpServers[$name].url' "$CONFIG_FILE")
+            echo ""
+            echo "  ${BOLD}Authenticating $server...${RESET}"
+            echo "  ${DIM}This will open your browser for SSO login.${RESET}"
+            echo ""
+
+            # Use claude mcp add which triggers the OAuth flow
+            # If already registered, remove and re-add to trigger auth
+            claude mcp remove --scope user "$server" 2>/dev/null || true
+            claude mcp add --transport http --scope user "$server" "$MCP_URL"
+
+            if [ $? -eq 0 ]; then
+                echo "  ${GREEN}✓ $server authentication complete${RESET}"
+            else
+                echo "  ${YELLOW}⚠️  $server authentication may have failed. Try running '/mcp' inside Claude Code.${RESET}"
+            fi
+        done
+    else
+        echo ""
+        echo "  ${DIM}Skipped. To authenticate later, run '/mcp' inside Claude Code in any Iterable repo.${RESET}"
+    fi
+fi
+
+# ============================================================================
 # SHELL CONFIGURATION (claude function & killall-orphan-claude)
 # ============================================================================
 echo ""

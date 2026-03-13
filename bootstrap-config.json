@@ -32,6 +32,7 @@
         "ITERABLE_ENABLE_SENDS": "true"
       },
       "repositories": [
+        "$HOME/MyProjects",
         "$HOME/MyProjects/iterable-swift-sdk",
         "$HOME/MyProjects/iterable-android-sdk",
         "$HOME/MyProjects/react-native-sdk"
@@ -60,6 +61,28 @@
         "get_user_fields",
         "get_channels",
         "get_message_types"
+      ]
+    },
+    "datadog": {
+      "type": "http",
+      "url": "https://mcp.datadoghq.com/api/unstable/mcp-server/mcp?toolsets=core,apm",
+      "oauth": true,
+      "repositories": [
+        "$HOME/MyProjects",
+        "$HOME/MyProjects/iterable-swift-sdk",
+        "$HOME/MyProjects/iterable-android-sdk",
+        "$HOME/MyProjects/react-native-sdk"
+      ]
+    },
+    "glean": {
+      "type": "http",
+      "url": "https://iterable-be.glean.com/mcp/default",
+      "oauth": true,
+      "repositories": [
+        "$HOME/MyProjects",
+        "$HOME/MyProjects/iterable-swift-sdk",
+        "$HOME/MyProjects/iterable-android-sdk",
+        "$HOME/MyProjects/react-native-sdk"
       ]
     },
     "sentry": {
